@@ -161,7 +161,8 @@ class ProductSubmitForm extends StatelessWidget {
                             category?.name ?? '',
                         onChanged: (newValue) {
                           if (newValue != null) {
-                            //TODO: should complete call  filterSubcategory
+                            context.dashBoardProvider
+                                .filterSubCategory(newValue);
                             dashProvider.selectedCategory = newValue;
                             dashProvider.updateUI();
                           }
@@ -187,7 +188,9 @@ class ProductSubmitForm extends StatelessWidget {
                             subCategory?.name ?? '',
                         onChanged: (newValue) {
                           if (newValue != null) {
-                            //TODO: should complete call filterBrand
+                            context.dashBoardProvider.filterBrand(newValue);
+                            dashProvider.selectedSubCategory = newValue;
+                            dashProvider.updateUI();
                           }
                         },
                         validator: (value) {
@@ -281,7 +284,9 @@ class ProductSubmitForm extends StatelessWidget {
                               variantType?.name ?? '',
                           onChanged: (newValue) {
                             if (newValue != null) {
-                              //TODO: should complete call filterVariant
+                              context.dashBoardProvider.filterVariant(newValue);
+                              dashProvider.selectedVariantType = newValue;
+                              dashProvider.updateUI();
                             }
                           },
                           hintText: 'Select Variant type',
@@ -321,7 +326,7 @@ class ProductSubmitForm extends StatelessWidget {
                       backgroundColor: secondaryColor,
                     ),
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close the popup
+                      Navigator.of(context).pop();
                     },
                     child: Text('Cancel'),
                   ),
@@ -331,16 +336,18 @@ class ProductSubmitForm extends StatelessWidget {
                       foregroundColor: Colors.white,
                       backgroundColor: primaryColor,
                     ),
-                    onPressed: () {
-                      // Validate and save the form
+                    onPressed: () async {
                       if (context
                           .dashBoardProvider.addProductFormKey.currentState!
                           .validate()) {
                         context
                             .dashBoardProvider.addProductFormKey.currentState!
                             .save();
-                        //TODO: should complete call submitProduct
-                        Navigator.of(context).pop();
+                        bool success =
+                            await context.dashBoardProvider.submitProduct();
+                        if (success) {
+                          Navigator.of(context).pop();
+                        }
                       }
                     },
                     child: Text('Submit'),

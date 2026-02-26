@@ -33,7 +33,6 @@ class MultiSelectDropDown<T> extends StatelessWidget {
             items: items.map((item) {
               return DropdownMenuItem<T>(
                 value: item,
-                // Disable default onTap to avoid closing menu when selecting an item
                 enabled: false,
                 child: StatefulBuilder(
                   builder: (context, menuSetState) {
