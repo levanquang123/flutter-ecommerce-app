@@ -70,6 +70,7 @@ class DataProvider extends ChangeNotifier {
 
   DataProvider() {
     getAllCategory();
+    getAllSubCategory();
   }
 
   Future<List<Category>> getAllCategory({bool showSnack = false}) async {
@@ -77,11 +78,11 @@ class DataProvider extends ChangeNotifier {
       Response response = await service.getItems(endpointUrl: "categories");
       if (response.isOk) {
         ApiResponse<List<Category>> apiResponse =
-        ApiResponse<List<Category>>.fromJson(
-            response.body,
+            ApiResponse<List<Category>>.fromJson(
+                response.body,
                 (json) => (json as List)
-                .map((item) => Category.fromJson(item))
-                .toList());
+                    .map((item) => Category.fromJson(item))
+                    .toList());
         _allCategories = apiResponse.data ?? [];
         _filteredCategories = List.from(_allCategories);
         notifyListeners();
@@ -107,10 +108,42 @@ class DataProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-//TODO: should complete getAllSubCategory
 
-//TODO: should complete filterSubCategories
+  Future<List<SubCategory>> getAllSubCategory({bool showSnack = false}) async {
+    try {
+      Response response = await service.getItems(endpointUrl: "SubCategories");
+      if (response.isOk) {
+        ApiResponse<List<SubCategory>> apiResponse =
+            ApiResponse<List<SubCategory>>.fromJson(
+                response.body,
+                (json) => (json as List)
+                    .map((item) => SubCategory.fromJson(item))
+                    .toList());
+        _allSubCategories = apiResponse.data ?? [];
+        _filteredSubCategories = List.from(_allSubCategories);
+        notifyListeners();
+        if (showSnack) {
+          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+        }
+      }
+    } catch (e) {
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
+      rethrow;
+    }
+    return _filteredSubCategories;
+  }
 
+  void filterSubCategories(String keyWord) {
+    if (keyWord.isEmpty) {
+      _filteredSubCategories = List.from(_allSubCategories);
+    } else {
+      final lowerKeyWord = keyWord.toLowerCase();
+      _filteredSubCategories = _allSubCategories.where((subCategory) {
+        return (subCategory.name ?? "").toLowerCase().contains(lowerKeyWord);
+      }).toList();
+    }
+    notifyListeners();
+  }
 //TODO: should complete getAllBrands
 
 //TODO: should complete filterBrands

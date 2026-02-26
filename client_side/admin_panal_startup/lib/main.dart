@@ -28,7 +28,7 @@ void main() {
     ChangeNotifierProvider(create: (context) => DataProvider()),
     ChangeNotifierProvider(create: (context) => MainScreenProvider()),
     ChangeNotifierProvider(
-        create: (context) => CategoryProvider(context.dataProvider)),
+        create: (context) => CategoryProvider (context.dataProvider)),
     ChangeNotifierProvider(
         create: (context) => SubCategoryProvider(context.dataProvider)),
     ChangeNotifierProvider(

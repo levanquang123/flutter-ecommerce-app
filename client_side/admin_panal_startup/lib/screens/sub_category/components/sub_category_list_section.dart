@@ -1,3 +1,5 @@
+import 'package:admin/utility/extensions.dart';
+
 import '../../../core/data/data_provider.dart';
 import '../../../models/sub_category.dart';
 import 'add_sub_category_form.dart';
@@ -7,7 +9,6 @@ import 'package:provider/provider.dart';
 import '../../../utility/color_list.dart';
 import '../../../utility/constants.dart';
 import '../../category/components/add_category_form.dart';
-
 
 class SubCategoryListSection extends StatelessWidget {
   const SubCategoryListSection({
@@ -56,15 +57,13 @@ class SubCategoryListSection extends StatelessWidget {
                   rows: List.generate(
                     dataProvider.subCategories.length,
                     (index) => subCategoryDataRow(
-                      dataProvider.subCategories[index],
-                      index + 1,
-                      edit: () {
-                        showAddSubCategoryForm(context, dataProvider.subCategories[index]);
-                      },
-                      delete: () {
-                        //TODO: should complete call deleteSubCategory
-                      },
-                    ),
+                        dataProvider.subCategories[index], index + 1, edit: () {
+                      showAddSubCategoryForm(
+                          context, dataProvider.subCategories[index]);
+                    }, delete: () {
+                      context.subCategoryProvider
+                          .deleteSubCategory(dataProvider.subCategories[index]);
+                    }),
                   ),
                 );
               },
@@ -76,7 +75,8 @@ class SubCategoryListSection extends StatelessWidget {
   }
 }
 
-DataRow subCategoryDataRow(SubCategory subCatInfo, int index, {Function? edit, Function? delete}) {
+DataRow subCategoryDataRow(SubCategory subCatInfo, int index,
+    {Function? edit, Function? delete}) {
   return DataRow(
     cells: [
       DataCell(

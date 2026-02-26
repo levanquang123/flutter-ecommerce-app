@@ -17,7 +17,7 @@ class SubCategorySubmitForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.subCategoryProvider.setDataForUpdateCategory(subCategory);
+    context.subCategoryProvider.setDataForUpdateSubCategory(subCategory);
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
       child: Form(
@@ -40,9 +40,11 @@ class SubCategorySubmitForm extends StatelessWidget {
                       builder: (context, subCatProvider, child) {
                         return CustomDropdown(
                           initialValue: subCatProvider.selectedCategory,
-                          hintText: subCatProvider.selectedCategory?.name ?? 'Select category',
+                          hintText: subCatProvider.selectedCategory?.name ??
+                              'Select category',
                           items: context.dataProvider.categories,
-                          displayItem: (Category? category) => category?.name ?? '',
+                          displayItem: (Category? category) =>
+                              category?.name ?? '',
                           onChanged: (newValue) {
                             if (newValue != null) {
                               subCatProvider.selectedCategory = newValue;
@@ -61,7 +63,8 @@ class SubCategorySubmitForm extends StatelessWidget {
                   ),
                   Expanded(
                     child: CustomTextField(
-                      controller: context.subCategoryProvider.subCategoryNameCtrl,
+                      controller:
+                          context.subCategoryProvider.subCategoryNameCtrl,
                       labelText: 'Sub Category Name',
                       onSave: (val) {},
                       validator: (value) {
@@ -84,7 +87,7 @@ class SubCategorySubmitForm extends StatelessWidget {
                       backgroundColor: secondaryColor,
                     ),
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close the popup
+                      Navigator.of(context).pop();
                     },
                     child: Text('Cancel'),
                   ),
@@ -94,12 +97,18 @@ class SubCategorySubmitForm extends StatelessWidget {
                       foregroundColor: Colors.white,
                       backgroundColor: primaryColor,
                     ),
-                    onPressed: () {
-                      // Validate and save the form
-                      if (context.subCategoryProvider.addSubCategoryFormKey.currentState!.validate()) {
-                        context.subCategoryProvider.addSubCategoryFormKey.currentState!.save();
-                        //TODO: should complete call submitSubCategory
-                        Navigator.of(context).pop();
+                    onPressed: () async {
+                      if (context.subCategoryProvider.addSubCategoryFormKey
+                          .currentState!
+                          .validate()) {
+                        context.subCategoryProvider.addSubCategoryFormKey
+                            .currentState!
+                            .save();
+                        bool success =
+                            await context.subCategoryProvider.submitSubCategory();
+                        if (success) {
+                          Navigator.of(context).pop();
+                        }
                       }
                     },
                     child: Text('Submit'),
@@ -121,7 +130,9 @@ void showAddSubCategoryForm(BuildContext context, SubCategory? subCategory) {
     builder: (BuildContext context) {
       return AlertDialog(
         backgroundColor: bgColor,
-        title: Center(child: Text('Add Sub Category'.toUpperCase(), style: TextStyle(color: primaryColor))),
+        title: Center(
+            child: Text('Add Sub Category'.toUpperCase(),
+                style: TextStyle(color: primaryColor))),
         content: SubCategorySubmitForm(subCategory: subCategory),
       );
     },

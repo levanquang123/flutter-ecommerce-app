@@ -113,16 +113,6 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  void pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      selectedImage = File(image.path);
-      imgXFile = image;
-      notifyListeners();
-    }
-  }
-
   Future<void> deleteCategory(Category category) async {
     try {
       Response response = await service.deleteItem(
@@ -150,7 +140,16 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  //? to create form data for sending image with body
+  void pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      selectedImage = File(image.path);
+      imgXFile = image;
+      notifyListeners();
+    }
+  }
+
   Future<FormData> createFormData(
       {required XFile? imgXFile,
       required Map<String, dynamic> formData}) async {
