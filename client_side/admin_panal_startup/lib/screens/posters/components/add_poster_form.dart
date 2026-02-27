@@ -75,12 +75,15 @@ class PosterSubmitForm extends StatelessWidget {
                       foregroundColor: Colors.white,
                       backgroundColor: primaryColor,
                     ),
-                    onPressed: () {
-                      // Validate and save the form
-                      if (context.posterProvider.addPosterFormKey.currentState!.validate()) {
-                        context.posterProvider.addPosterFormKey.currentState!.save();
-                        //TODO: should complete call submitPoster
-                        Navigator.of(context).pop();
+                    onPressed: () async {
+                      if (context.posterProvider.addPosterFormKey.currentState!
+                          .validate()) {
+                        context.posterProvider.addPosterFormKey.currentState!
+                            .save();
+                        bool success = await context.posterProvider.submitPoster();
+                        if (success) {
+                          Navigator.of(context).pop();
+                        }
                       }
                     },
                     child: Text('Submit'),
@@ -102,7 +105,9 @@ void showAddPosterForm(BuildContext context, Poster? poster) {
     builder: (BuildContext context) {
       return AlertDialog(
         backgroundColor: bgColor,
-        title: Center(child: Text('Add Poster'.toUpperCase(), style: TextStyle(color: primaryColor))),
+        title: Center(
+            child: Text('Add Poster'.toUpperCase(),
+                style: TextStyle(color: primaryColor))),
         content: PosterSubmitForm(poster: poster),
       );
     },

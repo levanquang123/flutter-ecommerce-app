@@ -25,7 +25,7 @@ final GlobalKey<ScaffoldMessengerState> messengerKey =
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MultiProvider(providers: [
-    ChangeNotifierProvider(create: (context) => DataProvider()),
+    ChangeNotifierProvider(create: (context) => DataProvider()..init()),
     ChangeNotifierProvider(create: (context) => MainScreenProvider()),
     ChangeNotifierProvider(
         create: (context) => CategoryProvider (context.dataProvider)),

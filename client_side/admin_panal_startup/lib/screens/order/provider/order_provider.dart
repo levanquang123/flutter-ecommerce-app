@@ -3,7 +3,6 @@ import '../../../services/http_services.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/data/data_provider.dart';
 
-
 class OrderProvider extends ChangeNotifier {
   HttpService service = HttpService();
   final DataProvider _dataProvider;

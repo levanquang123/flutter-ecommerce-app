@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../../models/api_response.dart';
 import '../../models/coupon.dart';
 import '../../models/my_notification.dart';
@@ -68,13 +70,26 @@ class DataProvider extends ChangeNotifier {
 
   List<MyNotification> get notifications => _filteredNotifications;
 
-  DataProvider() {
-    getAllCategory();
-    getAllSubCategory();
-    getAllBrands();
-    getAllVariantTypes();
-    getAllVariant();
-    getAllProducts();
+  DataProvider();
+
+  bool isLoading = false;
+
+  Future<void> init() async {
+    isLoading = true;
+    notifyListeners();
+
+    await Future.wait([
+      getAllCategory(),
+      getAllBrands(),
+      getAllProducts(),
+      getAllVariant(),
+      getAllVariantTypes(),
+      getAllSubCategory(),
+      getAllPosters(),
+    ]);
+
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<List<Category>> getAllCategory({bool showSnack = false}) async {
@@ -317,9 +332,50 @@ class DataProvider extends ChangeNotifier {
 
 //TODO: should complete filterCoupons
 
-//TODO: should complete getAllPosters
+  Future<List<Poster>> getAllPosters({bool showSnack = false}) async {
+    try {
+      Response response = await service.getItems(endpointUrl: "posters");
+      if (response.isOk) {
+        ApiResponse<List<Poster>> apiResponse =
+            ApiResponse<List<Poster>>.fromJson(
+          response.body,
+          (json) =>
+              (json as List).map((item) => Poster.fromJson(item)).toList(),
+        );
 
-//TODO: should complete filterPosters
+        _allPosters = apiResponse.data ?? [];
+        _filteredPosters = List.from(_allPosters);
+        notifyListeners();
+
+        if (showSnack) {
+          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+        }
+      } else {
+        if (showSnack) {
+          SnackBarHelper.showErrorSnackBar(
+            response.body?['message'] ?? response.statusText ?? "Server Error",
+          );
+        }
+      }
+    } catch (e) {
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
+      rethrow;
+    }
+    return _filteredPosters;
+  }
+
+  void filterPosters(String keyWord) {
+    if (keyWord.isEmpty) {
+      _filteredPosters = List.from(_allPosters);
+    } else {
+      final lowerKeyWord = keyWord.toLowerCase();
+      _filteredPosters = _allPosters.where((poster) {
+        final name = (poster.posterName ?? "").toLowerCase();
+        return name.contains(lowerKeyWord);
+      }).toList();
+    }
+    notifyListeners();
+  }
 
 //TODO: should complete getAllNotifications
 
@@ -331,7 +387,38 @@ class DataProvider extends ChangeNotifier {
 
 //TODO: should complete calculateOrdersWithStatus
 
-//TODO: should complete filterProductsByQuantity
+  filterProductsByQuantity(String productQntType) {
+    if (productQntType == "All products") {
+      _filteredProducts = List.from(_allProducts);
+    } else if (productQntType == "Out of Stock") {
+      _filteredProducts = _allProducts.where((product) {
+        return product.quantity != null && product.quantity == 0;
+      }).toList();
+    } else if (productQntType == "Limited Stock") {
+      _filteredProducts = _allProducts.where((product) {
+        return product.quantity != null && product.quantity == 1;
+      }).toList();
+    } else if (productQntType == "Other Stock") {
+      _filteredProducts = _allProducts.where((product) {
+        return product.quantity != null &&
+            product.quantity != 0 &&
+            product.quantity != 1;
+      }).toList();
+    }
+    notifyListeners();
+  }
 
-//TODO: should complete calculateProductWithQuantity
+  calculateProductWithQuantity({int? quantity}) {
+    int totalOrders = 0;
+    if (quantity == null) {
+      totalOrders = _allProducts.length;
+    } else {
+      for (Product product in _allProducts) {
+        if (product.quantity != null && product.quantity == quantity) {
+          totalOrders++;
+        }
+      }
+    }
+    return totalOrders;
+  }
 }
