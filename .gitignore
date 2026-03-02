@@ -30,3 +30,28 @@ ios/Flutter/Flutter.podspec
 
 # Logs
 *.log
+
+# --- Flutter (monorepo/nested) ---
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/build/
+
+# iOS (nested)
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+**/ios/Podfile.lock
+**/*.xcframework/
+
+# Android (nested)
+**/android/.gradle/
+**/android/app/build/
+**/android/local.properties
+
+# Node (nested)
+**/node_modules/
