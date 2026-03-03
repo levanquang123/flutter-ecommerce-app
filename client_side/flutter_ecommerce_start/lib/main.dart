@@ -59,7 +59,9 @@ class MyApp extends StatelessWidget {
         },
       ),
       debugShowCheckedModeBanner: false,
-      home: loginUser?.sId == null ? const LoginScreen() : const HomeScreen(),
+      home: const HomeScreen(),
+      // home: loginUser?.sId == null ? const LoginScreen() : const HomeScreen(),
+
       theme: AppTheme.lightAppTheme,
     );
   }
