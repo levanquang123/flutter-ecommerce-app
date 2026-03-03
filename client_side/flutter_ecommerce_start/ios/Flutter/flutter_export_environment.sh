@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
 export "FLUTTER_ROOT=D:\DEV\Flutter\flutter"
-export "FLUTTER_APPLICATION_PATH=D:\DEV\workspace\ecommerce-project\client_side\flutter_ecommerce_start"
+export "FLUTTER_APPLICATION_PATH=D:\DEV\workspace\ecommerce_project\client_side\flutter_ecommerce_start"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"

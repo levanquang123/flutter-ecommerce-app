@@ -4,7 +4,7 @@ import 'product_list_screen/product_list_screen.dart';
 import 'profile_screen/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-import 'package:bottom_navy_bar/bottom_navy_bar.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
 import '../../../utility/app_data.dart';
 import '../../../widget/page_wrapper.dart';
 
@@ -29,23 +29,33 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return PageWrapper(
       child: Scaffold(
-        bottomNavigationBar: BottomNavyBar(
-          itemCornerRadius: 10,
-          selectedIndex: newIndex,
-          items: AppData.bottomNavyBarItems
-              .map(
-                (item) => BottomNavyBarItem(
-                  icon: item.icon,
-                  title: Text(item.title),
-                  activeColor: item.activeColor,
-                  inactiveColor: item.inActiveColor,
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: const [
+                BoxShadow(
+                  blurRadius: 10,
+                  color: Colors.black12,
                 ),
-              )
-              .toList(),
-          onItemSelected: (currentIndex) {
-            newIndex = currentIndex;
-            setState(() {});
-          },
+              ],
+            ),
+            child: GNav(
+              gap: 8,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              selectedIndex: newIndex,
+              onTabChange: (currentIndex) {
+                setState(() => newIndex = currentIndex);
+              },
+              tabs: AppData.bottomNavyBarItems.map((item) {
+                return GButton(
+                  icon: (item.icon).icon!, // lấy IconData từ Icon widget
+                  text: item.title,
+                );
+              }).toList(),
+            ),
+          ),
         ),
         body: PageTransitionSwitcher(
           duration: const Duration(seconds: 1),

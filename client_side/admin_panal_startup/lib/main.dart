@@ -17,37 +17,47 @@ import 'screens/sub_category/provider/sub_category_provider.dart';
 import 'screens/variants/provider/variant_provider.dart';
 import 'screens/variants_type/provider/variant_type_provider.dart';
 import 'utility/constants.dart';
-import 'utility/extensions.dart';
 
 final GlobalKey<ScaffoldMessengerState> messengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MultiProvider(providers: [
-    ChangeNotifierProvider(create: (context) => DataProvider()..init()),
-    ChangeNotifierProvider(create: (context) => MainScreenProvider()),
+  runApp(
     ChangeNotifierProvider(
-        create: (context) => CategoryProvider (context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => SubCategoryProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => BrandProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => VariantsTypeProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => VariantsProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => DashBoardProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => CouponCodeProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => PosterProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => OrderProvider(context.dataProvider)),
-    ChangeNotifierProvider(
-        create: (context) => NotificationProvider(context.dataProvider)),
-  ], child: MyApp()));
+      create: (context) => DataProvider()..init(),
+      child: Consumer<DataProvider>(
+        builder: (context, dataProvider, child) {
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (context) => MainScreenProvider()),
+              ChangeNotifierProvider(
+                  create: (context) => CategoryProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => SubCategoryProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => BrandProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => VariantsTypeProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => VariantsProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => DashBoardProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => CouponCodeProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => PosterProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => OrderProvider(dataProvider)),
+              ChangeNotifierProvider(
+                  create: (context) => NotificationProvider(dataProvider)),
+            ],
+            child: MyApp(),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
