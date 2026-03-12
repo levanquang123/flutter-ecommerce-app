@@ -1,223 +1,235 @@
 class Order {
-  ShippingAddress? shippingAddress;
-  OrderTotal? orderTotal;
-  String? sId;
-  UserID? userID;
-  String? orderStatus;
-  List<Items>? items;
-  double? totalPrice;
-  String? paymentMethod;
-  CouponCode? couponCode;
-  String? trackingUrl;
-  String? orderDate;
-  int? iV;
+  final ShippingAddress? shippingAddress;
+  final OrderTotal? orderTotal;
+  final String? sId;
+  final UserID? userID;
+  final String? orderStatus;
+  final List<Items>? items;
+  final double? totalPrice;
+  final String? paymentMethod;
+  final CouponCode? couponCode;
+  final String? trackingUrl;
+  final String? orderDate;
+  final int? iV;
 
-  Order(
-      {this.shippingAddress,
-        this.orderTotal,
-        this.sId,
-        this.userID,
-        this.orderStatus,
-        this.items,
-        this.totalPrice,
-        this.paymentMethod,
-        this.couponCode,
-        this.trackingUrl,
-        this.orderDate,
-        this.iV});
+  const Order({
+    this.shippingAddress,
+    this.orderTotal,
+    this.sId,
+    this.userID,
+    this.orderStatus,
+    this.items,
+    this.totalPrice,
+    this.paymentMethod,
+    this.couponCode,
+    this.trackingUrl,
+    this.orderDate,
+    this.iV,
+  });
 
-  Order.fromJson(Map<String, dynamic> json) {
-    shippingAddress = json['shippingAddress'] != null
-        ? new ShippingAddress.fromJson(json['shippingAddress'])
-        : null;
-    orderTotal = json['orderTotal'] != null
-        ? new OrderTotal.fromJson(json['orderTotal'])
-        : null;
-    sId = json['_id'];
-    userID =
-    json['userID'] != null ? new UserID.fromJson(json['userID']) : null;
-    orderStatus = json['orderStatus'];
-    if (json['items'] != null) {
-      items = <Items>[];
-      json['items'].forEach((v) {
-        items!.add(new Items.fromJson(v));
-      });
-    }
-    totalPrice = json['totalPrice']?.toDouble();;
-    paymentMethod = json['paymentMethod'];
-    couponCode = json['couponCode'] != null
-        ? new CouponCode.fromJson(json['couponCode'])
-        : null;
-    trackingUrl = json['trackingUrl'];
-    orderDate = json['orderDate'];
-    iV = json['__v'];
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      shippingAddress: json['shippingAddress'] != null
+          ? ShippingAddress.fromJson(json['shippingAddress'])
+          : null,
+      orderTotal: json['orderTotal'] != null
+          ? OrderTotal.fromJson(json['orderTotal'])
+          : null,
+      sId: json['_id'],
+      userID: json['userID'] != null ? UserID.fromJson(json['userID']) : null,
+      orderStatus: json['orderStatus'],
+      items: (json['items'] as List?)
+          ?.map((e) => Items.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalPrice: (json['totalPrice'] as num?)?.toDouble(),
+      paymentMethod: json['paymentMethod'],
+      couponCode: json['couponCode'] != null
+          ? CouponCode.fromJson(json['couponCode'])
+          : null,
+      trackingUrl: json['trackingUrl'],
+      orderDate: json['orderDate'],
+      iV: json['__v'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.shippingAddress != null) {
-      data['shippingAddress'] = this.shippingAddress!.toJson();
-    }
-    if (this.orderTotal != null) {
-      data['orderTotal'] = this.orderTotal!.toJson();
-    }
-    data['_id'] = this.sId;
-    if (this.userID != null) {
-      data['userID'] = this.userID!.toJson();
-    }
-    data['orderStatus'] = this.orderStatus;
-    if (this.items != null) {
-      data['items'] = this.items!.map((v) => v.toJson()).toList();
-    }
-    data['totalPrice'] = this.totalPrice;
-    data['paymentMethod'] = this.paymentMethod;
-    if (this.couponCode != null) {
-      data['couponCode'] = this.couponCode!.toJson();
-    }
-    data['trackingUrl'] = this.trackingUrl;
-    data['orderDate'] = this.orderDate;
-    data['__v'] = this.iV;
-    return data;
+    return {
+      'shippingAddress': shippingAddress?.toJson(),
+      'orderTotal': orderTotal?.toJson(),
+      '_id': sId,
+      'userID': userID?.toJson(),
+      'orderStatus': orderStatus,
+      'items': items?.map((v) => v.toJson()).toList(),
+      'totalPrice': totalPrice,
+      'paymentMethod': paymentMethod,
+      'couponCode': couponCode?.toJson(),
+      'trackingUrl': trackingUrl,
+      'orderDate': orderDate,
+      '__v': iV,
+    };
   }
 }
 
 class ShippingAddress {
-  String? phone;
-  String? street;
-  String? city;
-  String? state;
-  String? postalCode;
-  String? country;
+  final String? phone;
+  final String? street;
+  final String? city;
+  final String? state;
+  final String? postalCode;
+  final String? country;
 
-  ShippingAddress(
-      {this.phone,
-        this.street,
-        this.city,
-        this.state,
-        this.postalCode,
-        this.country});
+  const ShippingAddress({
+    this.phone,
+    this.street,
+    this.city,
+    this.state,
+    this.postalCode,
+    this.country,
+  });
 
-  ShippingAddress.fromJson(Map<String, dynamic> json) {
-    phone = json['phone'];
-    street = json['street'];
-    city = json['city'];
-    state = json['state'];
-    postalCode = json['postalCode'];
-    country = json['country'];
+  factory ShippingAddress.fromJson(Map<String, dynamic> json) {
+    return ShippingAddress(
+      phone: json['phone'],
+      street: json['street'],
+      city: json['city'],
+      state: json['state'],
+      postalCode: json['postalCode'],
+      country: json['country'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['phone'] = this.phone;
-    data['street'] = this.street;
-    data['city'] = this.city;
-    data['state'] = this.state;
-    data['postalCode'] = this.postalCode;
-    data['country'] = this.country;
-    return data;
+    return {
+      'phone': phone,
+      'street': street,
+      'city': city,
+      'state': state,
+      'postalCode': postalCode,
+      'country': country,
+    };
   }
 }
 
 class OrderTotal {
-  double? subtotal;
-  double? discount;
-  double? total;
+  final double? subtotal;
+  final double? discount;
+  final double? total;
 
-  OrderTotal({this.subtotal, this.discount, this.total});
+  const OrderTotal({
+    this.subtotal,
+    this.discount,
+    this.total,
+  });
 
-  OrderTotal.fromJson(Map<String, dynamic> json) {
-    subtotal = json['subtotal']?.toDouble();
-    discount = json['discount']?.toDouble();
-    total = json['total']?.toDouble();
+  factory OrderTotal.fromJson(Map<String, dynamic> json) {
+    return OrderTotal(
+      subtotal: (json['subtotal'] as num?)?.toDouble(),
+      discount: (json['discount'] as num?)?.toDouble(),
+      total: (json['total'] as num?)?.toDouble(),
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['subtotal'] = this.subtotal;
-    data['discount'] = this.discount;
-    data['total'] = this.total;
-    return data;
+    return {
+      'subtotal': subtotal,
+      'discount': discount,
+      'total': total,
+    };
   }
 }
 
 class UserID {
-  String? sId;
-  String? name;
+  final String? sId;
+  final String? name;
 
-  UserID({this.sId, this.name});
+  const UserID({
+    this.sId,
+    this.name,
+  });
 
-  UserID.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    name = json['name'];
+  factory UserID.fromJson(Map<String, dynamic> json) {
+    return UserID(
+      sId: json['_id'],
+      name: json['name'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    return data;
+    return {
+      '_id': sId,
+      'name': name,
+    };
   }
 }
 
 class Items {
-  String? productID;
-  String? productName;
-  int? quantity;
-  double? price;
-  String? variant;
-  String? sId;
+  final String? productID;
+  final String? productName;
+  final int? quantity;
+  final double? price;
+  final String? variant;
+  final String? sId;
 
-  Items(
-      {this.productID,
-        this.productName,
-        this.quantity,
-        this.price,
-        this.variant,
-        this.sId});
+  const Items({
+    this.productID,
+    this.productName,
+    this.quantity,
+    this.price,
+    this.variant,
+    this.sId,
+  });
 
-  Items.fromJson(Map<String, dynamic> json) {
-    productID = json['productID'];
-    productName = json['productName'];
-    quantity = json['quantity'];
-    price = json['price']?.toDouble();
-    variant = json['variant'];
-    sId = json['_id'];
+  factory Items.fromJson(Map<String, dynamic> json) {
+    return Items(
+      productID: json['productID'],
+      productName: json['productName'],
+      quantity: json['quantity'],
+      price: (json['price'] as num?)?.toDouble(),
+      variant: json['variant'],
+      sId: json['_id'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['productID'] = this.productID;
-    data['productName'] = this.productName;
-    data['quantity'] = this.quantity;
-    data['price'] = this.price;
-    data['variant'] = this.variant;
-    data['_id'] = this.sId;
-    return data;
+    return {
+      'productID': productID,
+      'productName': productName,
+      'quantity': quantity,
+      'price': price,
+      'variant': variant,
+      '_id': sId,
+    };
   }
 }
 
 class CouponCode {
-  String? sId;
-  String? couponCode;
-  String? discountType;
-  int? discountAmount;
+  final String? sId;
+  final String? couponCode;
+  final String? discountType;
+  final double? discountAmount;
 
-  CouponCode(
-      {this.sId, this.couponCode, this.discountType, this.discountAmount});
+  const CouponCode({
+    this.sId,
+    this.couponCode,
+    this.discountType,
+    this.discountAmount,
+  });
 
-  CouponCode.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    couponCode = json['couponCode'];
-    discountType = json['discountType'];
-    discountAmount = json['discountAmount'];
+  factory CouponCode.fromJson(Map<String, dynamic> json) {
+    return CouponCode(
+      sId: json['_id'],
+      couponCode: json['couponCode'],
+      discountType: json['discountType'],
+      discountAmount: (json['discountAmount'] as num?)?.toDouble(),
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['couponCode'] = this.couponCode;
-    data['discountType'] = this.discountType;
-    data['discountAmount'] = this.discountAmount;
-    return data;
+    return {
+      '_id': sId,
+      'couponCode': couponCode,
+      'discountType': discountType,
+      'discountAmount': discountAmount,
+    };
   }
 }

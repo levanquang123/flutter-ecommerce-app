@@ -1,4 +1,4 @@
-import '../../../utility/utility_extention.dart';
+import '../../../utility/utility_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cart/model/cart_model.dart';
 

@@ -1,12 +1,12 @@
 class Category {
-  String? sId;
-  String? name;
-  String? image;
-  bool isSelected;
-  String? createdAt;
-  String? updatedAt;
+  final String? sId;
+  final String? name;
+  final String? image;
+  final bool isSelected;
+  final String? createdAt;
+  final String? updatedAt;
 
-  Category({
+  const Category({
     this.sId,
     this.name,
     this.image,
@@ -15,21 +15,24 @@ class Category {
     this.updatedAt,
   });
 
-  Category.fromJson(Map<String, dynamic> json)
-      : sId = json['_id'],
-        name = json['name'],
-        image = json['image'],
-        createdAt = json['createdAt'],
-        updatedAt = json['updatedAt'],
-        isSelected = false;
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      sId: json['_id'],
+      name: json['name'],
+      image: json['image'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      isSelected: false,
+    );
+  }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['image'] = this.image;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    return data;
+    return {
+      '_id': sId,
+      'name': name,
+      'image': image,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
   }
 }

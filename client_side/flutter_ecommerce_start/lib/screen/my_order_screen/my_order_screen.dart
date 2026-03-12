@@ -2,7 +2,7 @@ import '../../core/data/data_provider.dart';
 import '../tracking_screen/tracking_screen.dart';
 import '../../utility/app_color.dart';
 import '../../utility/extensions.dart';
-import '../../utility/utility_extention.dart';
+import '../../utility/utility_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';

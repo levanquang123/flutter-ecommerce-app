@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               tabs: AppData.bottomNavyBarItems.map((item) {
                 return GButton(
-                  icon: (item.icon).icon!, // lấy IconData từ Icon widget
+                  icon: (item.icon).icon!,
                   text: item.title,
                 );
               }).toList(),

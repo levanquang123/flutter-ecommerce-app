@@ -4,10 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../../widget/carousel_slider.dart';
 import '../../../../widget/page_wrapper.dart';
 import '../../models/product.dart';
-import '../../widget/horizondal_list.dart';
+import '../../widget/horizontal_list.dart';
 import 'components/product_rating_section.dart';
-
-
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;

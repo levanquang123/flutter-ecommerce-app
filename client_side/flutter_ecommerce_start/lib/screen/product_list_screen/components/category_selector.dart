@@ -6,7 +6,6 @@ import '../../../models/category.dart';
 class CategorySelector extends StatelessWidget {
   final List<Category> categories;
 
-
   const CategorySelector({
     super.key,
     required this.categories,

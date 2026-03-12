@@ -1,36 +1,38 @@
 class User {
-  String? sId;
-  String? name;
-  String? password;
-  String? createdAt;
-  String? updatedAt;
-  int? iV;
+  final String? sId;
+  final String? name;
+  final String? password;
+  final String? createdAt;
+  final String? updatedAt;
+  final int? iV;
 
-  User(
+  const User(
       {this.sId,
-        this.name,
-        this.password,
-        this.createdAt,
-        this.updatedAt,
-        this.iV});
+      this.name,
+      this.password,
+      this.createdAt,
+      this.updatedAt,
+      this.iV});
 
-  User.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    name = json['name'];
-    password = json['password'];
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
-    iV = json['__v'];
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      sId: json['_id'],
+      name: json['name'],
+      password: json['password'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      iV: json['__v'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['password'] = this.password;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
-    return data;
+    return {
+      '_id': sId,
+      'name': name,
+      'password': password,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      '__v': iV,
+    };
   }
 }

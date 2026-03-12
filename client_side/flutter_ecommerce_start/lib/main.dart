@@ -18,7 +18,6 @@ import 'package:provider/provider.dart';
 import 'core/data/data_provider.dart';
 import 'models/user.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();

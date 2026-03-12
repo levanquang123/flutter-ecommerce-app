@@ -1,65 +1,73 @@
 class Brand {
-  String? sId;
-  String? name;
-  SubcategoryId? subcategoryId;
-  String? createdAt;
-  String? updatedAt;
+  final String? sId;
+  final String? name;
+  final SubcategoryId? subcategoryId;
+  final String? createdAt;
+  final String? updatedAt;
 
-  Brand(
-      {this.sId,
-        this.name,
-        this.subcategoryId,
-        this.createdAt,
-        this.updatedAt});
+  const Brand({
+    this.sId,
+    this.name,
+    this.subcategoryId,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-  Brand.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    name = json['name'];
-    subcategoryId = json['subcategoryId'] != null
-        ? new SubcategoryId.fromJson(json['subcategoryId'])
-        : null;
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
+  factory Brand.fromJson(Map<String, dynamic> json) {
+    return Brand(
+      sId: json['_id'],
+      name: json['name'],
+      subcategoryId: json['subcategoryId'] != null
+          ? SubcategoryId.fromJson(json['subcategoryId'])
+          : null,
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    if (this.subcategoryId != null) {
-      data['subcategoryId'] = this.subcategoryId!.toJson();
-    }
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    return data;
+    return {
+      '_id': sId,
+      'name': name,
+      'subcategoryId': subcategoryId?.toJson(),
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
   }
 }
 
 class SubcategoryId {
-  String? sId;
-  String? name;
-  String? categoryId;
-  String? createdAt;
-  String? updatedAt;
+  final String? sId;
+  final String? name;
+  final String? categoryId;
+  final String? createdAt;
+  final String? updatedAt;
 
-  SubcategoryId(
-      {this.sId, this.name, this.categoryId, this.createdAt, this.updatedAt});
+  const SubcategoryId({
+    this.sId,
+    this.name,
+    this.categoryId,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-  SubcategoryId.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    name = json['name'];
-    categoryId = json['categoryId'];
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
+  factory SubcategoryId.fromJson(Map<String, dynamic> json) {
+    return SubcategoryId(
+      sId: json['_id'],
+      name: json['name'],
+      categoryId: json['categoryId'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['categoryId'] = this.categoryId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    return data;
+    return {
+      '_id': sId,
+      'name': name,
+      'categoryId': categoryId,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
   }
 }
