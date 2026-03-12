@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utility/constants.dart';
 
 class CustomNetworkImage extends StatelessWidget {
   final String imageUrl;
@@ -14,8 +15,14 @@ class CustomNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Xử lý URL localhost
+    String finalImageUrl = imageUrl;
+    if (finalImageUrl.contains('localhost')) {
+      finalImageUrl = finalImageUrl.replaceAll('http://localhost:3000', MAIN_URL.replaceAll(RegExp(r'/$'), ''));
+    }
+
     return Image.network(
-      imageUrl,
+      finalImageUrl,
       fit: fit,
       scale: scale,
       loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {

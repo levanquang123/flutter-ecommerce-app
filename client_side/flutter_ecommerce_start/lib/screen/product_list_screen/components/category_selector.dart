@@ -2,6 +2,7 @@ import '../../product_by_category_screen/product_by_category_screen.dart';
 import '../../../utility/animation/open_container_wrapper.dart';
 import 'package:flutter/material.dart';
 import '../../../models/category.dart';
+import '../../../utility/constants.dart';
 
 class CategorySelector extends StatelessWidget {
   final List<Category> categories;
@@ -20,6 +21,12 @@ class CategorySelector extends StatelessWidget {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
+          
+          String imageUrl = category.image ?? '';
+          if (imageUrl.contains('localhost')) {
+            imageUrl = imageUrl.replaceAll('http://localhost:3000', MAIN_URL.replaceAll(RegExp(r'/$'), ''));
+          }
+
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 6,vertical: 1),
             child: OpenContainerWrapper(
@@ -39,7 +46,7 @@ class CategorySelector extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Image.network(
-                        category.image ?? '',
+                        imageUrl,
                         width: 90,
                         height: 90,
                         fit: BoxFit.contain,
