@@ -43,7 +43,6 @@ Future<void> main() async {
   );
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -58,9 +57,7 @@ class MyApp extends StatelessWidget {
         },
       ),
       debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
-      // home: loginUser?.sId == null ? const LoginScreen() : const HomeScreen(),
-
+      home: loginUser?.sId == null ? const LoginScreen() : const HomeScreen(),
       theme: AppTheme.lightAppTheme,
     );
   }

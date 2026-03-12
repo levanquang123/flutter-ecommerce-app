@@ -11,24 +11,22 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FlutterLogin(
-      // savedEmail: 'testing@gmail.com',
-      // savedPassword: '12345',
       loginAfterSignUp: false,
       logo: const AssetImage('assets/images/logo.png'),
-      onLogin: (loginData) {
-        //TODO: should complete call login
+      onLogin: (loginData) async {
+        return await context.userProvider.login(loginData);
       },
-      onSignup: (SignupData data) {
-        //TODO: should complete call register
+      onSignup: (SignupData data) async {
+        return await context.userProvider.register(data);
       },
       onSubmitAnimationCompleted: () {
-        if(context.userProvider.getLoginUsr()?.sId != null){
+        if (context.userProvider.getLoginUsr()?.sId != null) {
           Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (context) {
               return const HomeScreen();
             },
           ));
-        }else{
+        } else {
           Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (context) {
               return const LoginScreen();
@@ -44,7 +42,8 @@ class LoginScreen extends StatelessWidget {
           buttonTheme: const LoginButtonTheme(
             backgroundColor: AppColor.darkOrange,
           ),
-          cardTheme: const CardTheme(color: Colors.white, surfaceTintColor: Colors.white),
+          cardTheme: const CardTheme(
+              color: Colors.white, surfaceTintColor: Colors.white),
           titleStyle: const TextStyle(color: Colors.black)),
     );
   }

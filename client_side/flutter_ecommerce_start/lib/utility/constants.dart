@@ -1,4 +1,4 @@
-const MAIN_URL = 'http://localhost:3000';
+const MAIN_URL = 'http://192.168.1.7:3000';
 
 const FAVORITE_PRODUCT_BOX = 'FAVORITE_PRODUCT_BOX';
 const USER_INFO_BOX = 'USER_INFO_BOX';
