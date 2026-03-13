@@ -1,14 +1,14 @@
 class Brand {
   final String? sId;
   final String? name;
-  final SubcategoryId? subcategoryId;
+  final SubCategoryId? subCategoryId;
   final String? createdAt;
   final String? updatedAt;
 
   const Brand({
     this.sId,
     this.name,
-    this.subcategoryId,
+    this.subCategoryId,
     this.createdAt,
     this.updatedAt,
   });
@@ -17,8 +17,8 @@ class Brand {
     return Brand(
       sId: json['_id'],
       name: json['name'],
-      subcategoryId: json['subcategoryId'] != null
-          ? SubcategoryId.fromJson(json['subcategoryId'])
+      subCategoryId: json['subCategoryId'] != null
+          ? SubCategoryId.fromJson(json['subCategoryId'])
           : null,
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
@@ -29,21 +29,21 @@ class Brand {
     return {
       '_id': sId,
       'name': name,
-      'subcategoryId': subcategoryId?.toJson(),
+      'subCategoryId': subCategoryId?.toJson(),
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
   }
 }
 
-class SubcategoryId {
+class SubCategoryId {
   final String? sId;
   final String? name;
   final String? categoryId;
   final String? createdAt;
   final String? updatedAt;
 
-  const SubcategoryId({
+  const SubCategoryId({
     this.sId,
     this.name,
     this.categoryId,
@@ -51,8 +51,8 @@ class SubcategoryId {
     this.updatedAt,
   });
 
-  factory SubcategoryId.fromJson(Map<String, dynamic> json) {
-    return SubcategoryId(
+  factory SubCategoryId.fromJson(Map<String, dynamic> json) {
+    return SubCategoryId(
       sId: json['_id'],
       name: json['name'],
       categoryId: json['categoryId'],
