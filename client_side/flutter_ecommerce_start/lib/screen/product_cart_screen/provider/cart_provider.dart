@@ -1,5 +1,6 @@
 import 'dart:developer';
 import '../../../models/coupon.dart';
+import '../../../utility/utility_extension.dart';
 import '../../login_screen/provider/user_provider.dart';
 import '../../../services/http_services.dart';
 import 'package:flutter/material.dart';
@@ -33,32 +34,163 @@ class CartProvider extends ChangeNotifier {
 
   Coupon? couponApplied;
   double couponCodeDiscount = 0;
-  String selectedPaymentOption = 'prepaid';
+  String selectedPaymentOption = 'cod';
 
   CartProvider(this._userProvider);
 
-  //TODO: should complete updateCart
+  void updateCart(CartModel cartItems, int quantity) {
+    quantity = cartItems.quantity + quantity;
+    flutterCart.updateQuantity(
+        cartItems.productId, cartItems.variants, quantity);
+    notifyListeners();
+  }
 
-  //TODO: should complete getCartSubTotal
+  double getCartSubTotal() {
+    return flutterCart.subtotal;
+  }
 
-  //TODO: should complete getGrandTotal
+  double getGrandTotal() {
+    return getCartSubTotal() - couponCodeDiscount;
+  }
 
-  //TODO: should complete getCartItems
+  getCartItems() {
+    myCartItems = flutterCart.cartItemsList;
+    notifyListeners();
+  }
 
-  //TODO: should complete clearCartItems
+  clearCartItems() {
+    flutterCart.clearCart();
+    notifyListeners();
+  }
 
+  checkCoupon() async {
+    try {
+      if (couponController.text.isEmpty) {
+        SnackBarHelper.showErrorSnackBar('Enter a coupon code');
+        return;
+      }
 
-  //TODO: should complete checkCoupon
+      List<String> productIds =
+          myCartItems.map((cartItem) => cartItem.productId).toList();
 
-  //TODO: should complete getCouponDiscountAmount
+      Map<String, dynamic> couponData = {
+        "couponCode": couponController.text,
+        "purchaseAmount": getCartSubTotal(),
+        "productIds": productIds
+      };
 
+      final response = await service.addItem(
+          endpointUrl: 'couponCodes/check-coupon', itemData: couponData);
 
-  //TODO: should complete submitOrder
+      if (response.isOk) {
+        final ApiResponse<Coupon> apiResponse = ApiResponse<Coupon>.fromJson(
+            response.body,
+            (json) => Coupon.fromJson(json as Map<String, dynamic>));
 
-  //TODO: should complete addOrder
+        if (apiResponse.success == true) {
+          Coupon? coupon = apiResponse.data;
+          if (coupon != null) {
+            couponApplied = coupon;
+            couponCodeDiscount = getCouponDiscountAmount(coupon);
+          }
 
-  //TODO: should complete cartItemToOrderItem
+          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+          log('Coupon is valid');
+        } else {
+          SnackBarHelper.showErrorSnackBar(apiResponse.message);
+        }
+      }
+    } catch (e) {
+      log('Error checking coupon: $e');
+    }
+  }
 
+  double getCouponDiscountAmount(Coupon coupon) {
+    double discountAmount = 0;
+    String discountType = coupon.discountType ?? 'fixed';
+
+    if (discountType == 'fixed') {
+      discountAmount = coupon.discountAmount ?? 0;
+      return discountAmount;
+    } else {
+      double discountPercentage = coupon.discountAmount ?? 0;
+      double amountAfterDiscountPercentage =
+          getCartSubTotal() * (discountPercentage / 100);
+      return amountAfterDiscountPercentage;
+    }
+  }
+
+  submitOrder(BuildContext context) async {
+    if (selectedPaymentOption == "cod") {
+      addOrder(context);
+    } else {
+      await stripePayment(operation: () {
+        addOrder(context);
+      });
+    }
+  }
+
+  addOrder(BuildContext context) async {
+    try {
+      Map<String, dynamic> order = {
+        "userID": _userProvider.getLoginUsr()?.sId ?? '',
+        "orderStatus": "pending",
+        "items": cartItemToOrderItem(myCartItems),
+        "totalPrice": getCartSubTotal(),
+        "shippingAddress": {
+          "phone": phoneController.text,
+          "street": streetController.text,
+          "city": cityController.text,
+          "state": stateController.text,
+          "postalCode": postalCodeController.text,
+          "country": countryController.text,
+        },
+        "paymentMethod": selectedPaymentOption,
+        "couponCode": couponApplied?.sId,
+        "orderTotal": {
+          "subtotal": getCartSubTotal(),
+          "discount": couponCodeDiscount,
+          "total": getGrandTotal()
+        },
+      };
+
+      final response =
+          await service.addItem(endpointUrl: 'orders', itemData: order);
+
+      if (response.isOk) {
+        ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
+        if (apiResponse.success == true) {
+          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+          log('Order added');
+          clearCouponDiscount();
+          clearCartItems();
+          Navigator.pop(context);
+        } else {
+          SnackBarHelper.showErrorSnackBar(
+              'Failed to add Order: ${apiResponse.message}');
+        }
+      } else {
+        SnackBarHelper.showErrorSnackBar(
+            'Error ${response.body['message'] ?? response.statusText}');
+      }
+    } catch (e) {
+      print(e);
+      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      rethrow;
+    }
+  }
+
+  List<Map<String, dynamic>> cartItemToOrderItem(List<CartModel> cartItems) {
+    return cartItems.map((cartItem) {
+      return {
+        "productID": cartItem.productId,
+        "productName": cartItem.productName,
+        "quantity": cartItem.quantity,
+        "price": cartItem.variants.safeElementAt(0)?.price ?? 0,
+        "variant": cartItem.variants.safeElementAt(0)?.color ?? "",
+      };
+    }).toList();
+  }
 
   clearCouponDiscount() {
     couponApplied = null;
@@ -88,33 +220,29 @@ class CartProvider extends ChangeNotifier {
           "postal_code": postalCodeController.text,
           "country": "US"
         },
-        "amount":  100, //TODO: should complete amount grand total
+        "amount": (getGrandTotal() * 100).round(),
         "currency": "usd",
         "description": "Your transaction description here"
       };
-      Response response = await service.addItem(endpointUrl: 'payment/stripe', itemData: paymentData);
-      final data = await response.body;
+      
+      log("👉 Step 1: Getting Stripe secrets from server...");
+      Response response = await service.addItem(
+          endpointUrl: 'payment/stripe', itemData: paymentData);
+      
+      if (!response.isOk) {
+          log("❌ Server Error: ${response.statusText}");
+          return;
+      }
+
+      final data = response.body;
       final paymentIntent = data['paymentIntent'];
       final ephemeralKey = data['ephemeralKey'];
       final customer = data['customer'];
       final publishableKey = data['publishableKey'];
-
+      
+      log("👉 Step 2: Init Stripe Payment Sheet...");
       Stripe.publishableKey = publishableKey;
-      BillingDetails billingDetails = BillingDetails(
-        email: _userProvider.getLoginUsr()?.name,
-        phone: '91234123908',
-        name: _userProvider.getLoginUsr()?.name,
-        address: Address(
-            country: 'US',
-            city: cityController.text,
-            line1: streetController.text,
-            line2: stateController.text,
-            postalCode: postalCodeController.text,
-            state: stateController.text
-            // Other address details
-            ),
-        // Other billing details
-      );
+      
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           customFlow: false,
@@ -123,44 +251,42 @@ class CartProvider extends ChangeNotifier {
           customerEphemeralKeySecret: ephemeralKey,
           customerId: customer,
           style: ThemeMode.light,
-          billingDetails: billingDetails,
-          // googlePay: const PaymentSheetGooglePay(
-          //   merchantCountryCode: 'US',
-          //   currencyCode: 'usd',
-          //   testEnv: true,
-          // ),
-          // applePay: const PaymentSheetApplePay(merchantCountryCode: 'US')
+          billingDetails: BillingDetails(
+            email: _userProvider.getLoginUsr()?.name,
+            name: _userProvider.getLoginUsr()?.name,
+            address: Address(
+                country: 'US',
+                city: cityController.text,
+                line1: streetController.text,
+                line2: stateController.text,
+                postalCode: postalCodeController.text,
+                state: stateController.text
+            ),
+          ),
         ),
       );
 
-      await Stripe.instance.presentPaymentSheet().then((value) {
-        log('payment success');
-        //? do the success operation
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          const SnackBar(content: Text('Payment Success')),
-        );
-        operation();
-      }).onError((error, stackTrace) {
-        if (error is StripeException) {
-          ScaffoldMessenger.of(Get.context!).showSnackBar(
-            SnackBar(content: Text('${error.error.localizedMessage}')),
-          );
-        } else {
-          ScaffoldMessenger.of(Get.context!).showSnackBar(
-            SnackBar(content: Text('Stripe Error: $error')),
-          );
-        }
-      });
-    } catch (e) {
+      log("👉 Step 3: Presenting Stripe Payment Sheet...");
+      await Stripe.instance.presentPaymentSheet();
+      
+      log("✅ Payment Sheet Closed Successfully");
       ScaffoldMessenger.of(Get.context!).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        const SnackBar(content: Text('Payment Success')),
+      );
+      operation();
+
+    } catch (e) {
+      log("❌ Stripe Error: $e");
+      ScaffoldMessenger.of(Get.context!).showSnackBar(
+        SnackBar(content: Text('Stripe error: $e')),
       );
     }
   }
 
   Future<void> razorpayPayment({required void Function() operation}) async {
     try {
-      Response response = await service.addItem(endpointUrl: 'payment/razorpay', itemData: {});
+      Response response =
+          await service.addItem(endpointUrl: 'payment/razorpay', itemData: {});
       final data = await response.body;
       String? razorpayKey = data['key'];
       if (razorpayKey != null && razorpayKey != '') {
@@ -171,16 +297,22 @@ class CartProvider extends ChangeNotifier {
           "currency": 'INR',
           'description': 'Your transaction description',
           'send_sms_hash': true,
-          "prefill": {"email": _userProvider.getLoginUsr()?.name, "contact": ''},
+          "prefill": {
+            "email": _userProvider.getLoginUsr()?.name,
+            "contact": ''
+          },
           "theme": {'color': '#FFE64A'},
-          "image": 'https://store.rapidflutter.com/digitalAssetUpload/rapidlogo.png',
+          "image":
+              'https://store.rapidflutter.com/digitalAssetUpload/rapidlogo.png',
         };
         razorpay.open(options);
-        razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+        razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS,
+            (PaymentSuccessResponse response) {
           operation();
           return;
         });
-        razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+        razorpay.on(Razorpay.EVENT_PAYMENT_ERROR,
+            (PaymentFailureResponse response) {
           SnackBarHelper.showErrorSnackBar('Error ${response.message}');
           return;
         });
