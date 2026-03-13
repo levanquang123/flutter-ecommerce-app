@@ -1,7 +1,13 @@
+import 'dart:developer';
+
+import 'package:get/get_connect/http/src/response/response.dart';
+
+import '../../../models/api_response.dart';
 import '../../../models/order.dart';
 import '../../../services/http_services.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/data/data_provider.dart';
+import '../../../utility/snack_bar_helper.dart';
 
 class OrderProvider extends ChangeNotifier {
   HttpService service = HttpService();
@@ -13,11 +19,72 @@ class OrderProvider extends ChangeNotifier {
 
   OrderProvider(this._dataProvider);
 
-  //TODO: should complete updateOrder
+  updateOrder() async {
+    try {
+      if (orderForUpdate != null) {
+        Map<String, dynamic> order = {
+          'trackingUrl': trackingUrlCtrl.text,
+          'orderStatus': selectedOrderStatus
+        };
 
+        final response = await service.updateItem(
+          endpointUrl: 'orders',
+          itemData: order,
+          itemId: orderForUpdate?.sId ?? '',
+        );
 
-  //TODO: should complete deleteOrder
+        if (response.isOk) {
+          ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
 
+          if (apiResponse.success == true) {
+            SnackBarHelper.showSuccessSnackBar('${apiResponse.message}');
+            log('Order Updated');
+            _dataProvider.getAllOrders();
+          } else {
+            SnackBarHelper.showErrorSnackBar(
+                'Failed to add Order: ${apiResponse.message}');
+          }
+        } else {
+          SnackBarHelper.showErrorSnackBar(
+              response.body?['message'] ?? response.statusText);
+        }
+      }
+    } catch (e) {
+      SnackBarHelper.showErrorSnackBar(e.toString());
+    }
+  }
+
+  deleteOrder(Order order) async {
+    try {
+      Response response = await service.deleteItem(
+        endpointUrl: 'orders',
+        itemId: order.sId ?? '',
+      );
+
+      if (response.isOk) {
+        ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
+
+        if (apiResponse.success == true) {
+          SnackBarHelper.showSuccessSnackBar('Order Deleted Successfully');
+          _dataProvider.getAllOrders();
+        }
+      } else {
+        SnackBarHelper.showErrorSnackBar(
+            'Error ${response.body?['message'] ?? response.statusText}'
+        );
+      }
+    } catch (e) {
+      print(e);
+      rethrow;
+    }
+  }
+
+  void setOrderForEdit(Order? order) {
+    orderForUpdate = order;
+    trackingUrlCtrl.text = order?.trackingUrl ?? '';
+    selectedOrderStatus = order?.orderStatus ?? 'pending';
+    notifyListeners();
+  }
 
   updateUI() {
     notifyListeners();

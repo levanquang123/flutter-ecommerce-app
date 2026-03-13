@@ -8,7 +8,6 @@ import 'package:flutter_cart/flutter_cart.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../../core/data/data_provider.dart';
 import '../../../models/api_response.dart';
 import '../../../utility/constants.dart';
@@ -17,7 +16,6 @@ import '../../../utility/snack_bar_helper.dart';
 class CartProvider extends ChangeNotifier {
   HttpService service = HttpService();
   final box = GetStorage();
-  Razorpay razorpay = Razorpay();
   final UserProvider _userProvider;
   var flutterCart = FlutterCart();
   List<CartModel> myCartItems = [];
@@ -71,7 +69,7 @@ class CartProvider extends ChangeNotifier {
       }
 
       List<String> productIds =
-          myCartItems.map((cartItem) => cartItem.productId).toList();
+      myCartItems.map((cartItem) => cartItem.productId).toList();
 
       Map<String, dynamic> couponData = {
         "couponCode": couponController.text,
@@ -85,7 +83,7 @@ class CartProvider extends ChangeNotifier {
       if (response.isOk) {
         final ApiResponse<Coupon> apiResponse = ApiResponse<Coupon>.fromJson(
             response.body,
-            (json) => Coupon.fromJson(json as Map<String, dynamic>));
+                (json) => Coupon.fromJson(json as Map<String, dynamic>));
 
         if (apiResponse.success == true) {
           Coupon? coupon = apiResponse.data;
@@ -133,7 +131,9 @@ class CartProvider extends ChangeNotifier {
   addOrder(BuildContext context) async {
     try {
       Map<String, dynamic> order = {
-        "userID": _userProvider.getLoginUsr()?.sId ?? '',
+        "userID": _userProvider
+            .getLoginUsr()
+            ?.sId ?? '',
         "orderStatus": "pending",
         "items": cartItemToOrderItem(myCartItems),
         "totalPrice": getCartSubTotal(),
@@ -155,7 +155,7 @@ class CartProvider extends ChangeNotifier {
       };
 
       final response =
-          await service.addItem(endpointUrl: 'orders', itemData: order);
+      await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (response.isOk) {
         ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
@@ -186,8 +186,12 @@ class CartProvider extends ChangeNotifier {
         "productID": cartItem.productId,
         "productName": cartItem.productName,
         "quantity": cartItem.quantity,
-        "price": cartItem.variants.safeElementAt(0)?.price ?? 0,
-        "variant": cartItem.variants.safeElementAt(0)?.color ?? "",
+        "price": cartItem.variants
+            .safeElementAt(0)
+            ?.price ?? 0,
+        "variant": cartItem.variants
+            .safeElementAt(0)
+            ?.color ?? "",
       };
     }).toList();
   }
@@ -211,8 +215,12 @@ class CartProvider extends ChangeNotifier {
   Future<void> stripePayment({required void Function() operation}) async {
     try {
       Map<String, dynamic> paymentData = {
-        "email": _userProvider.getLoginUsr()?.name,
-        "name": _userProvider.getLoginUsr()?.name,
+        "email": _userProvider
+            .getLoginUsr()
+            ?.name,
+        "name": _userProvider
+            .getLoginUsr()
+            ?.name,
         "address": {
           "line1": streetController.text,
           "city": cityController.text,
@@ -224,14 +232,12 @@ class CartProvider extends ChangeNotifier {
         "currency": "usd",
         "description": "Your transaction description here"
       };
-      
-      log("👉 Step 1: Getting Stripe secrets from server...");
+
       Response response = await service.addItem(
           endpointUrl: 'payment/stripe', itemData: paymentData);
-      
+
       if (!response.isOk) {
-          log("❌ Server Error: ${response.statusText}");
-          return;
+        return;
       }
 
       final data = response.body;
@@ -239,10 +245,9 @@ class CartProvider extends ChangeNotifier {
       final ephemeralKey = data['ephemeralKey'];
       final customer = data['customer'];
       final publishableKey = data['publishableKey'];
-      
-      log("👉 Step 2: Init Stripe Payment Sheet...");
+
       Stripe.publishableKey = publishableKey;
-      
+
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           customFlow: false,
@@ -252,8 +257,12 @@ class CartProvider extends ChangeNotifier {
           customerId: customer,
           style: ThemeMode.light,
           billingDetails: BillingDetails(
-            email: _userProvider.getLoginUsr()?.name,
-            name: _userProvider.getLoginUsr()?.name,
+            email: _userProvider
+                .getLoginUsr()
+                ?.name,
+            name: _userProvider
+                .getLoginUsr()
+                ?.name,
             address: Address(
                 country: 'US',
                 city: cityController.text,
@@ -266,60 +275,16 @@ class CartProvider extends ChangeNotifier {
         ),
       );
 
-      log("👉 Step 3: Presenting Stripe Payment Sheet...");
       await Stripe.instance.presentPaymentSheet();
-      
-      log("✅ Payment Sheet Closed Successfully");
+
       ScaffoldMessenger.of(Get.context!).showSnackBar(
         const SnackBar(content: Text('Payment Success')),
       );
       operation();
-
     } catch (e) {
-      log("❌ Stripe Error: $e");
       ScaffoldMessenger.of(Get.context!).showSnackBar(
         SnackBar(content: Text('Stripe error: $e')),
       );
-    }
-  }
-
-  Future<void> razorpayPayment({required void Function() operation}) async {
-    try {
-      Response response =
-          await service.addItem(endpointUrl: 'payment/razorpay', itemData: {});
-      final data = await response.body;
-      String? razorpayKey = data['key'];
-      if (razorpayKey != null && razorpayKey != '') {
-        var options = {
-          'key': razorpayKey,
-          'amount': 100, //TODO: should complete amount grand total
-          'name': "user",
-          "currency": 'INR',
-          'description': 'Your transaction description',
-          'send_sms_hash': true,
-          "prefill": {
-            "email": _userProvider.getLoginUsr()?.name,
-            "contact": ''
-          },
-          "theme": {'color': '#FFE64A'},
-          "image":
-              'https://store.rapidflutter.com/digitalAssetUpload/rapidlogo.png',
-        };
-        razorpay.open(options);
-        razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS,
-            (PaymentSuccessResponse response) {
-          operation();
-          return;
-        });
-        razorpay.on(Razorpay.EVENT_PAYMENT_ERROR,
-            (PaymentFailureResponse response) {
-          SnackBarHelper.showErrorSnackBar('Error ${response.message}');
-          return;
-        });
-      }
-    } catch (e) {
-      SnackBarHelper.showErrorSnackBar('Error$e');
-      return;
     }
   }
 
