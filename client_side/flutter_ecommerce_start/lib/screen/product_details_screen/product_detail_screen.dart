@@ -1,3 +1,5 @@
+import 'package:e_commerce_flutter/utility/extensions.dart';
+
 import 'provider/product_detail_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -51,20 +53,19 @@ class ProductDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      //? product nam e
                       Text(
                         '${product.name}',
                         style: Theme.of(context).textTheme.displayMedium,
                       ),
                       const SizedBox(height: 10),
-                      //? product rating section
                       const ProductRatingSection(),
                       const SizedBox(height: 10),
-                      //? product rate , offer , stock section
                       Row(
                         children: [
                           Text(
-                            product.offerPrice != null ? "\$${product.offerPrice}" : "\$${product.price}",
+                            product.offerPrice != null
+                                ? "\$${product.offerPrice}"
+                                : "\$${product.price}",
                             style: Theme.of(context).textTheme.displayLarge,
                           ),
                           const SizedBox(width: 3),
@@ -81,7 +82,9 @@ class ProductDetailScreen extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            product.quantity != 0 ? "Available stock : ${product.quantity}" : "Not available",
+                            product.quantity != 0
+                                ? "Available stock : ${product.quantity}"
+                                : "Not available",
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           )
                         ],
@@ -90,7 +93,8 @@ class ProductDetailScreen extends StatelessWidget {
                       product.proVariantId!.isNotEmpty
                           ? Text(
                               'Available ${product.proVariantTypeId?.type}',
-                              style: const TextStyle(color: Colors.red, fontSize: 16),
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 16),
                             )
                           : const SizedBox(),
                       Consumer<ProductDetailProvider>(
@@ -120,10 +124,11 @@ class ProductDetailScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: product.quantity != 0
                               ? () {
-                                  //TODO: should complete call addToCart
+                                  context.proDetailProvider.addToCart(product);
                                 }
                               : null,
-                          child: const Text("Add to cart", style: TextStyle(color: Colors.white)),
+                          child: const Text("Add to cart",
+                              style: TextStyle(color: Colors.white)),
                         ),
                       )
                     ],
