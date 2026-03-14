@@ -88,6 +88,7 @@ class DataProvider extends ChangeNotifier {
       getAllPosters(),
       getAllCoupons(),
       getAllOrders(),
+      getAllNotifications(),
     ]);
 
     isLoading = false;
@@ -422,9 +423,43 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-//TODO: should complete getAllNotifications
+  Future<List<MyNotification>> getAllNotifications(
+      {bool showSnack = false}) async {
+    try {
+      Response response =
+          await service.getItems(endpointUrl: 'notification/all-notification');
+      if (response.isOk) {
+        ApiResponse<List<MyNotification>> apiResponse =
+            ApiResponse<List<MyNotification>>.fromJson(
+          response.body,
+          (json) => (json as List)
+              .map((item) => MyNotification.fromJson(item))
+              .toList(),
+        );
+        _allNotifications = apiResponse.data ?? [];
+        _filteredNotifications = List.from(_allNotifications);
+        notifyListeners();
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      }
+    } catch (e) {
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
+      rethrow;
+    }
+    return _filteredNotifications;
+  }
 
-//TODO: should complete filterNotifications
+  void filterNotifications(String keyword) {
+    if (keyword.isEmpty) {
+      _filteredNotifications = List.from(_allNotifications);
+    } else {
+      final lowerKeyword = keyword.toLowerCase();
+      _filteredNotifications = _allNotifications.where((notification) {
+        return (notification.title ?? '').toLowerCase().contains(lowerKeyword);
+      }).toList();
+    }
+    notifyListeners();
+  }
+
   Future<List<Order>> getAllOrders({bool showSnack = false}) async {
     try {
       Response response = await service.getItems(endpointUrl: 'orders');

@@ -61,11 +61,11 @@ class DataProvider extends ChangeNotifier {
       Response response = await service.getItems(endpointUrl: "categories");
       if (response.isOk) {
         ApiResponse<List<Category>> apiResponse =
-        ApiResponse<List<Category>>.fromJson(
-            response.body,
+            ApiResponse<List<Category>>.fromJson(
+                response.body,
                 (json) => (json as List)
-                .map((item) => Category.fromJson(item))
-                .toList());
+                    .map((item) => Category.fromJson(item))
+                    .toList());
         _allCategories = apiResponse.data ?? [];
         _filteredCategories = List.from(_allCategories);
         notifyListeners();
@@ -80,7 +80,6 @@ class DataProvider extends ChangeNotifier {
     return _filteredCategories;
   }
 
-
   void filterCategories(String keyWord) {
     if (keyWord.isEmpty) {
       _filteredCategories = List.from(_allCategories);
@@ -93,17 +92,16 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   Future<List<SubCategory>> getAllSubCategory({bool showSnack = false}) async {
     try {
       Response response = await service.getItems(endpointUrl: "SubCategories");
       if (response.isOk) {
         ApiResponse<List<SubCategory>> apiResponse =
-        ApiResponse<List<SubCategory>>.fromJson(
-            response.body,
+            ApiResponse<List<SubCategory>>.fromJson(
+                response.body,
                 (json) => (json as List)
-                .map((item) => SubCategory.fromJson(item))
-                .toList());
+                    .map((item) => SubCategory.fromJson(item))
+                    .toList());
         _allSubCategories = apiResponse.data ?? [];
         _filteredSubCategories = List.from(_allSubCategories);
         notifyListeners();
@@ -118,7 +116,6 @@ class DataProvider extends ChangeNotifier {
     return _filteredSubCategories;
   }
 
-
   void filterSubCategories(String keyWord) {
     if (keyWord.isEmpty) {
       _filteredSubCategories = List.from(_allSubCategories);
@@ -131,17 +128,16 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   Future<List<Brand>> getAllBrands({bool showSnack = false}) async {
     try {
       Response response = await service.getItems(endpointUrl: "brands");
       if (response.isOk) {
         ApiResponse<List<Brand>> apiResponse =
-        ApiResponse<List<Brand>>.fromJson(
-            response.body,
+            ApiResponse<List<Brand>>.fromJson(
+                response.body,
                 (json) => (json as List)
-                .map((item) => Brand.fromJson(item))
-                .toList());
+                    .map((item) => Brand.fromJson(item))
+                    .toList());
 
         _allBrands = apiResponse.data ?? [];
         _filteredBrands = List.from(_allBrands);
@@ -160,7 +156,6 @@ class DataProvider extends ChangeNotifier {
     return _filteredBrands;
   }
 
-
   void filterBrands(String keyWord) {
     if (keyWord.isEmpty) {
       _filteredBrands = List.from(_allBrands);
@@ -173,15 +168,14 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   Future<List<Product>> getAllProducts({bool showSnack = false}) async {
     try {
       Response response = await service.getItems(endpointUrl: 'products');
       if (response.isOk) {
         ApiResponse<List<Product>> apiResponse =
-        ApiResponse<List<Product>>.fromJson(
+            ApiResponse<List<Product>>.fromJson(
           response.body,
-              (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
+          (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
         );
 
         _allProducts = apiResponse.data ?? [];
@@ -200,7 +194,6 @@ class DataProvider extends ChangeNotifier {
     }
     return _filteredProducts;
   }
-
 
   void filterProducts(String keyword) {
     if (keyword.isEmpty) {
@@ -224,9 +217,9 @@ class DataProvider extends ChangeNotifier {
       Response response = await service.getItems(endpointUrl: "posters");
       if (response.isOk) {
         ApiResponse<List<Poster>> apiResponse =
-        ApiResponse<List<Poster>>.fromJson(
+            ApiResponse<List<Poster>>.fromJson(
           response.body,
-              (json) =>
+          (json) =>
               (json as List).map((item) => Poster.fromJson(item)).toList(),
         );
 
@@ -251,10 +244,41 @@ class DataProvider extends ChangeNotifier {
     return _filteredPosters;
   }
 
+  Future<void> getAllOrderByUser(User? user, {bool showSnack = false}) async {
+    try {
+      final userId = user?.sId;
 
-  //TODO: should complete getAllOrderByUser
+      Response response = await service.getItems(
+        endpointUrl: 'orders/orderByUserId/$userId',
+      );
 
-  double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
+      if (response.isOk) {
+        ApiResponse<List<Order>> apiResponse =
+        ApiResponse<List<Order>>.fromJson(
+          response.body,
+              (json) => (json as List)
+              .map((item) => Order.fromJson(item))
+              .toList(),
+        );
+
+        _allOrders = apiResponse.data ?? [];
+        _filteredOrders = List.from(_allOrders);
+
+        notifyListeners();
+
+        if (showSnack) {
+          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+        }
+      }
+    } catch (e) {
+      if (showSnack) {
+        SnackBarHelper.showErrorSnackBar(e.toString());
+      }
+    }
+  }
+
+
+double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
     if (originalPrice <= 0) {
       throw ArgumentError('Original price must be greater than zero.');
     }

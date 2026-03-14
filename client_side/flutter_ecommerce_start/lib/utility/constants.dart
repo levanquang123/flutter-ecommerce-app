@@ -9,3 +9,4 @@ const  CITY_KEY = 'CITY_KEY';
 const  STATE_KEY = 'STATE_KEY';
 const  POSTAL_CODE_KEY = 'POSTAL_CODE_KEY';
 const  COUNTRY_KEY = 'COUNTRY_KEY';
+const ONE_SIGNAL_APP_ID='6cdabdbd-00cc-4587-97e4-e64aa06e074b';

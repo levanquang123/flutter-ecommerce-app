@@ -1,3 +1,5 @@
+import 'package:admin/utility/extensions.dart';
+
 import '../../../models/my_notification.dart';
 import '../provider/notification_provider.dart';
 import '../../../utility/constants.dart';
@@ -17,11 +19,11 @@ class ViewNotificationForm extends StatelessWidget {
     var size = MediaQuery
         .of(context)
         .size;
-    //TODO: should complete getNotificationInfo
+    context.notificationProvider.getNotificationInfo(notification);
     return SingleChildScrollView(
       child: Container(
         padding: EdgeInsets.all(defaultPadding),
-        width: size.width * 0.5, // Adjust width based on screen size
+        width: size.width * 0.5,
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(12.0),
@@ -48,9 +50,9 @@ class ViewNotificationForm extends StatelessWidget {
               margin: EdgeInsets.only(top: 20),
               padding: EdgeInsets.all(defaultPadding),
               decoration: BoxDecoration(
-                color: secondaryColor, // Light grey background to stand out
+                color: secondaryColor,
                 borderRadius: BorderRadius.circular(8.0),
-                border: Border.all(color: Colors.blueAccent), // Blue border for emphasis
+                border: Border.all(color: Colors.blueAccent),
               ),
               child: Consumer<NotificationProvider>(
                 builder: (context, notificationProvider, child) {
