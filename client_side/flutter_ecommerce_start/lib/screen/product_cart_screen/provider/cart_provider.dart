@@ -1,5 +1,6 @@
 import 'dart:developer';
 import '../../../models/coupon.dart';
+import '../../../models/product.dart';
 import '../../../utility/utility_extension.dart';
 import '../../login_screen/provider/user_provider.dart';
 import '../../../services/http_services.dart';
@@ -12,6 +13,7 @@ import '../../../core/data/data_provider.dart';
 import '../../../models/api_response.dart';
 import '../../../utility/constants.dart';
 import '../../../utility/snack_bar_helper.dart';
+import '../../../utility/extensions.dart';
 
 class CartProvider extends ChangeNotifier {
   HttpService service = HttpService();
@@ -36,10 +38,44 @@ class CartProvider extends ChangeNotifier {
 
   CartProvider(this._userProvider);
 
-  void updateCart(CartModel cartItems, int quantity) {
-    quantity = cartItems.quantity + quantity;
+  void updateCart(
+      CartModel cartItem,
+      int quantityChange,
+      BuildContext context,
+      ) {
+    final product = context.dataProvider.allProducts.firstWhereOrNull(
+          (p) => p.sId == cartItem.productId,
+    );
+
+    if (product == null) {
+      SnackBarHelper.showErrorSnackBar('Product not found');
+      return;
+    }
+
+    final int stock = product.quantity ?? 0;
+    final int newQuantity = cartItem.quantity + quantityChange;
+
+    if (newQuantity < 1) {
+      flutterCart.removeItem(cartItem.productId, cartItem.variants);
+      notifyListeners();
+      return;
+    }
+
+    if (quantityChange > 0 && newQuantity > stock) {
+      SnackBarHelper.showErrorSnackBar(
+        stock == 0
+            ? 'Out of stock'
+            : 'Only $stock items available',
+      );
+      return;
+    }
+
     flutterCart.updateQuantity(
-        cartItems.productId, cartItems.variants, quantity);
+      cartItem.productId,
+      cartItem.variants,
+      newQuantity,
+    );
+
     notifyListeners();
   }
 
@@ -69,7 +105,7 @@ class CartProvider extends ChangeNotifier {
       }
 
       List<String> productIds =
-      myCartItems.map((cartItem) => cartItem.productId).toList();
+          myCartItems.map((cartItem) => cartItem.productId).toList();
 
       Map<String, dynamic> couponData = {
         "couponCode": couponController.text,
@@ -83,7 +119,7 @@ class CartProvider extends ChangeNotifier {
       if (response.isOk) {
         final ApiResponse<Coupon> apiResponse = ApiResponse<Coupon>.fromJson(
             response.body,
-                (json) => Coupon.fromJson(json as Map<String, dynamic>));
+            (json) => Coupon.fromJson(json as Map<String, dynamic>));
 
         if (apiResponse.success == true) {
           Coupon? coupon = apiResponse.data;
@@ -131,9 +167,7 @@ class CartProvider extends ChangeNotifier {
   addOrder(BuildContext context) async {
     try {
       Map<String, dynamic> order = {
-        "userID": _userProvider
-            .getLoginUsr()
-            ?.sId ?? '',
+        "userID": _userProvider.getLoginUsr()?.sId ?? '',
         "orderStatus": "pending",
         "items": cartItemToOrderItem(myCartItems),
         "totalPrice": getCartSubTotal(),
@@ -155,13 +189,17 @@ class CartProvider extends ChangeNotifier {
       };
 
       final response =
-      await service.addItem(endpointUrl: 'orders', itemData: order);
+          await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (response.isOk) {
         ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
         if (apiResponse.success == true) {
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
           log('Order added');
+
+          // Refresh product stock data
+          context.dataProvider.getAllProducts();
+
           clearCouponDiscount();
           clearCartItems();
           Navigator.pop(context);
@@ -186,12 +224,8 @@ class CartProvider extends ChangeNotifier {
         "productID": cartItem.productId,
         "productName": cartItem.productName,
         "quantity": cartItem.quantity,
-        "price": cartItem.variants
-            .safeElementAt(0)
-            ?.price ?? 0,
-        "variant": cartItem.variants
-            .safeElementAt(0)
-            ?.color ?? "",
+        "price": cartItem.variants.safeElementAt(0)?.price ?? 0,
+        "variant": cartItem.variants.safeElementAt(0)?.color ?? "",
       };
     }).toList();
   }
@@ -215,12 +249,8 @@ class CartProvider extends ChangeNotifier {
   Future<void> stripePayment({required void Function() operation}) async {
     try {
       Map<String, dynamic> paymentData = {
-        "email": _userProvider
-            .getLoginUsr()
-            ?.name,
-        "name": _userProvider
-            .getLoginUsr()
-            ?.name,
+        "email": _userProvider.getLoginUsr()?.name,
+        "name": _userProvider.getLoginUsr()?.name,
         "address": {
           "line1": streetController.text,
           "city": cityController.text,
@@ -257,20 +287,15 @@ class CartProvider extends ChangeNotifier {
           customerId: customer,
           style: ThemeMode.light,
           billingDetails: BillingDetails(
-            email: _userProvider
-                .getLoginUsr()
-                ?.name,
-            name: _userProvider
-                .getLoginUsr()
-                ?.name,
+            email: _userProvider.getLoginUsr()?.name,
+            name: _userProvider.getLoginUsr()?.name,
             address: Address(
                 country: 'US',
                 city: cityController.text,
                 line1: streetController.text,
                 line2: stateController.text,
                 postalCode: postalCodeController.text,
-                state: stateController.text
-            ),
+                state: stateController.text),
           ),
         ),
       );

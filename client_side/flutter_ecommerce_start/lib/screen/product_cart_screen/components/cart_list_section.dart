@@ -111,7 +111,7 @@ class CartListSection extends StatelessWidget {
                         IconButton(
                           splashRadius: 10.0,
                           onPressed: () {
-                            context.cartProvider.updateCart(cartItem, -1);
+                            context.cartProvider.updateCart(cartItem, -1, context);
                           },
                           icon: const Icon(
                             Icons.remove,
@@ -128,7 +128,7 @@ class CartListSection extends StatelessWidget {
                         IconButton(
                           splashRadius: 10.0,
                           onPressed: () {
-                            context.cartProvider.updateCart(cartItem, 1);
+                            context.cartProvider.updateCart(cartItem, 1, context);
                           },
                           icon: const Icon(Icons.add, color: Color(0xFFEC6813)),
                         ),

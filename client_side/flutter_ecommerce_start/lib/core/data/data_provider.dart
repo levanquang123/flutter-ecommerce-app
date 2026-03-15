@@ -254,11 +254,9 @@ class DataProvider extends ChangeNotifier {
 
       if (response.isOk) {
         ApiResponse<List<Order>> apiResponse =
-        ApiResponse<List<Order>>.fromJson(
+            ApiResponse<List<Order>>.fromJson(
           response.body,
-              (json) => (json as List)
-              .map((item) => Order.fromJson(item))
-              .toList(),
+          (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
         );
 
         _allOrders = apiResponse.data ?? [];
@@ -277,21 +275,16 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-
-double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
+  double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
     if (originalPrice <= 0) {
       throw ArgumentError('Original price must be greater than zero.');
     }
-
     num finalDiscountedPrice = discountedPrice ?? originalPrice;
-
     if (finalDiscountedPrice >= originalPrice) {
       return 0;
     }
-
     double discount =
         ((originalPrice - finalDiscountedPrice) / originalPrice) * 100;
-
     return discount;
   }
 }
