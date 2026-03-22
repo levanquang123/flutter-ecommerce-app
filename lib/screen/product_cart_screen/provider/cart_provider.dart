@@ -104,8 +104,13 @@ class CartProvider extends ChangeNotifier {
         return;
       }
 
+      if (couponApplied != null && couponApplied?.couponCode == couponController.text) {
+        SnackBarHelper.showErrorSnackBar('This coupon is already applied');
+        return;
+      }
+
       List<String> productIds =
-          myCartItems.map((cartItem) => cartItem.productId).toList();
+      myCartItems.map((cartItem) => cartItem.productId).toList();
 
       Map<String, dynamic> couponData = {
         "couponCode": couponController.text,
@@ -119,13 +124,14 @@ class CartProvider extends ChangeNotifier {
       if (response.isOk) {
         final ApiResponse<Coupon> apiResponse = ApiResponse<Coupon>.fromJson(
             response.body,
-            (json) => Coupon.fromJson(json as Map<String, dynamic>));
+                (json) => Coupon.fromJson(json as Map<String, dynamic>));
 
         if (apiResponse.success == true) {
           Coupon? coupon = apiResponse.data;
           if (coupon != null) {
             couponApplied = coupon;
             couponCodeDiscount = getCouponDiscountAmount(coupon);
+            notifyListeners();
           }
 
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
@@ -133,9 +139,13 @@ class CartProvider extends ChangeNotifier {
         } else {
           SnackBarHelper.showErrorSnackBar(apiResponse.message);
         }
+      } else {
+        String errorMsg = response.body?['message'] ?? response.statusText ?? 'Error checking coupon';
+        SnackBarHelper.showErrorSnackBar(errorMsg);
       }
     } catch (e) {
       log('Error checking coupon: $e');
+      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
     }
   }
 
@@ -189,7 +199,7 @@ class CartProvider extends ChangeNotifier {
       };
 
       final response =
-          await service.addItem(endpointUrl: 'orders', itemData: order);
+      await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (response.isOk) {
         ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
@@ -197,7 +207,6 @@ class CartProvider extends ChangeNotifier {
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
           log('Order added');
 
-          // Refresh product stock data
           context.dataProvider.getAllProducts();
 
           clearCouponDiscount();
@@ -209,12 +218,11 @@ class CartProvider extends ChangeNotifier {
         }
       } else {
         SnackBarHelper.showErrorSnackBar(
-            'Error ${response.body['message'] ?? response.statusText}');
+            'Error: ${response.body['message'] ?? response.statusText}');
       }
     } catch (e) {
-      print(e);
+      log('Add order error: $e');
       SnackBarHelper.showErrorSnackBar('An error occurred: $e');
-      rethrow;
     }
   }
 
@@ -248,9 +256,11 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> stripePayment({required void Function() operation}) async {
     try {
+      final user = _userProvider.getLoginUsr();
+
       Map<String, dynamic> paymentData = {
-        "email": _userProvider.getLoginUsr()?.name,
-        "name": _userProvider.getLoginUsr()?.name,
+        "email": user?.email,
+        "name": user?.email,
         "address": {
           "line1": streetController.text,
           "city": cityController.text,
@@ -260,17 +270,18 @@ class CartProvider extends ChangeNotifier {
         },
         "amount": (getGrandTotal() * 100).round(),
         "currency": "usd",
-        "description": "Your transaction description here"
+        "description": "Payment for order by ${user?.email}"
       };
 
       Response response = await service.addItem(
           endpointUrl: 'payment/stripe', itemData: paymentData);
 
       if (!response.isOk) {
+        SnackBarHelper.showErrorSnackBar('Payment initialization failed');
         return;
       }
 
-      final data = response.body;
+      final data = response.body['data'];
       final paymentIntent = data['paymentIntent'];
       final ephemeralKey = data['ephemeralKey'];
       final customer = data['customer'];
@@ -287,8 +298,8 @@ class CartProvider extends ChangeNotifier {
           customerId: customer,
           style: ThemeMode.light,
           billingDetails: BillingDetails(
-            email: _userProvider.getLoginUsr()?.name,
-            name: _userProvider.getLoginUsr()?.name,
+            email: user?.email,
+            name: user?.email,
             address: Address(
                 country: 'US',
                 city: cityController.text,
@@ -307,8 +318,9 @@ class CartProvider extends ChangeNotifier {
       );
       operation();
     } catch (e) {
+      log('Stripe Error: $e');
       ScaffoldMessenger.of(Get.context!).showSnackBar(
-        SnackBar(content: Text('Stripe error: $e')),
+        const SnackBar(content: Text('Payment cancelled or error occurred')),
       );
     }
   }

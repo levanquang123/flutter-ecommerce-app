@@ -13,8 +13,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Assuming your theme and colors are defined elsewhere in your app
-    const TextStyle linkStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
     const TextStyle titleStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 20);
 
     return Scaffold(
@@ -39,7 +37,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Center(
             child: Text(
-              "${context.userProvider.getLoginUsr()?.name}",
+              "${context.userProvider.getLoginUsr()?.email}",
               style: titleStyle,
             ),
           ),
@@ -70,7 +68,6 @@ class ProfileScreen extends StatelessWidget {
               ),
               onPressed: () {
                 context.userProvider.logOutUser();
-                Get.offAll(const LoginScreen());
               },
               child: const Text('Logout', style: TextStyle(fontSize: 18)),
             ),

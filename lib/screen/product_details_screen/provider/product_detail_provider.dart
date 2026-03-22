@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_cart/flutter_cart.dart';
+import 'package:get/get.dart';
 import '../../../core/data/data_provider.dart';
 import '../../../models/product.dart';
 import '../../../utility/snack_bar_helper.dart';
@@ -15,6 +16,16 @@ class ProductDetailProvider extends ChangeNotifier {
   void addToCart(Product product) {
     if (product.proVariantId!.isNotEmpty && selectedVariant == null) {
       SnackBarHelper.showErrorSnackBar('Please select a variant');
+      return;
+    }
+
+    final isItemInCart = flutterCart.cartItemsList.any((item) =>
+      item.productId == product.sId && 
+      (item.variants.isEmpty || item.variants[0].color == selectedVariant)
+    );
+
+    if (isItemInCart) {
+      SnackBarHelper.showErrorSnackBar('This product is already in the shopping cart.');
       return;
     }
 
