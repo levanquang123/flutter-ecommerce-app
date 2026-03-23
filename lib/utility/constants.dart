@@ -1,4 +1,4 @@
-// const MAIN_URL = 'http://192.168.1.7:3000';
+// const MAIN_URL = 'http://172.26.14.91:3000';
 
 const MAIN_URL = 'https://api.levanquang.com';
 
