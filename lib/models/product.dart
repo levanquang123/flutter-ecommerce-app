@@ -35,10 +35,10 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      sId: json['_id'],
-      name: json['name'],
-      description: json['description'],
-      quantity: json['quantity'],
+      sId: json['_id']?.toString(),
+      name: json['name']?.toString(),
+      description: json['description']?.toString(),
+      quantity: json['quantity'] is int ? json['quantity'] : null,
       price: (json['price'] as num?)?.toDouble(),
       offerPrice: (json['offerPrice'] as num?)?.toDouble(),
       proCategoryId: json['proCategoryId'] != null
@@ -47,20 +47,23 @@ class Product {
       proSubCategoryId: json['proSubCategoryId'] != null
           ? ProRef.fromJson(json['proSubCategoryId'])
           : null,
-      proBrandId:
-      json['proBrandId'] != null ? ProRef.fromJson(json['proBrandId']) : null,
+      proBrandId: json['proBrandId'] != null
+          ? ProRef.fromJson(json['proBrandId'])
+          : null,
       proVariantTypeId: json['proVariantTypeId'] != null
           ? ProTypeRef.fromJson(json['proVariantTypeId'])
           : null,
-      proVariantId: (json['proVariantId'] as List?)
-          ?.map((e) => e.toString())
-          .toList(),
-      images: (json['images'] as List?)
-          ?.map((e) => Images.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
-      iV: json['__v'],
+      proVariantId: json['proVariantId'] != null && json['proVariantId'] is List
+          ? (json['proVariantId'] as List).map((e) => e.toString()).toList()
+          : [],
+      images: json['images'] != null && json['images'] is List
+          ? (json['images'] as List)
+              .map((e) => Images.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+      iV: json['__v'] is int ? json['__v'] : null,
     );
   }
 
@@ -91,11 +94,16 @@ class ProRef {
 
   const ProRef({this.sId, this.name});
 
-  factory ProRef.fromJson(Map<String, dynamic> json) {
-    return ProRef(
-      sId: json['_id'],
-      name: json['name'],
-    );
+  factory ProRef.fromJson(dynamic json) {
+    if (json is String) {
+      return ProRef(sId: json);
+    } else if (json is Map<String, dynamic>) {
+      return ProRef(
+        sId: json['_id']?.toString(),
+        name: json['name']?.toString(),
+      );
+    }
+    return const ProRef();
   }
 
   Map<String, dynamic> toJson() {
@@ -112,11 +120,16 @@ class ProTypeRef {
 
   const ProTypeRef({this.sId, this.type});
 
-  factory ProTypeRef.fromJson(Map<String, dynamic> json) {
-    return ProTypeRef(
-      sId: json['_id'],
-      type: json['type'],
-    );
+  factory ProTypeRef.fromJson(dynamic json) {
+    if (json is String) {
+      return ProTypeRef(sId: json);
+    } else if (json is Map<String, dynamic>) {
+      return ProTypeRef(
+        sId: json['_id']?.toString(),
+        type: json['type']?.toString(),
+      );
+    }
+    return const ProTypeRef();
   }
 
   Map<String, dynamic> toJson() {
@@ -136,9 +149,9 @@ class Images {
 
   factory Images.fromJson(Map<String, dynamic> json) {
     return Images(
-      image: json['image'],
-      url: json['url'],
-      sId: json['_id'],
+      image: json['image'] is int ? json['image'] : null,
+      url: json['url']?.toString(),
+      sId: json['_id']?.toString(),
     );
   }
 

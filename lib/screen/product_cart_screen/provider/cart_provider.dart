@@ -202,7 +202,7 @@ class CartProvider extends ChangeNotifier {
       await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (response.isOk) {
-        ApiResponse apiResponse = ApiResponse.fromJson(response.body, null);
+        ApiResponse apiResponse = ApiResponse.fromJson(response.body, (json) => json);
         if (apiResponse.success == true) {
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
           log('Order added');

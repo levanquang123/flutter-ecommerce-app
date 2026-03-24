@@ -1,20 +1,24 @@
+import 'package:e_commerce_flutter/models/product.dart';
+
 class User {
   final String? sId;
   final String? email;
   final String? password;
   final String? googleId;
   final String? role;
+  List<Product>? favorites;
   final String? accessToken;
   final String? refreshToken;
   final String? createdAt;
   final String? updatedAt;
   final int? iV;
 
-  const User({
+   User({
     this.sId,
     this.email,
     this.password,
     this.googleId,
+    this.favorites,
     this.role,
     this.accessToken,
     this.refreshToken,
@@ -24,19 +28,36 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    Map<String, dynamic> userData = json['user'] ?? json;
+    Map<String, dynamic> userData;
+    if (json.containsKey('user') && json['user'] is Map) {
+      userData = json['user'];
+    } else {
+      userData = json;
+    }
 
     return User(
-      sId: userData['_id'],
-      email: userData['email'],
-      password: userData['password'],
-      googleId: userData['googleId'],
-      role: userData['role'],
-      accessToken: json['token'] ?? json['accessToken'] ?? userData['accessToken'],
-      refreshToken: json['refreshToken'] ?? userData['refreshToken'],
-      createdAt: userData['createdAt'],
-      updatedAt: userData['updatedAt'],
-      iV: userData['__v'],
+      sId: userData['_id']?.toString(),
+      email: userData['email']?.toString(),
+      password: userData['password']?.toString(),
+      googleId: userData['googleId']?.toString(),
+      role: userData['role']?.toString(),
+
+      accessToken: (json['token'] ?? json['accessToken'] ?? userData['accessToken'] ?? userData['token'])?.toString(),
+
+      favorites: userData['favorites'] != null && userData['favorites'] is List
+          ? List<Product>.from((userData['favorites'] as List).map((x) {
+        if (x is Map<String, dynamic>) {
+          return Product.fromJson(x);
+        } else {
+          return Product(sId: x.toString());
+        }
+      }))
+          : [],
+
+      refreshToken: (json['refreshToken'] ?? userData['refreshToken'])?.toString(),
+      createdAt: userData['createdAt']?.toString(),
+      updatedAt: userData['updatedAt']?.toString(),
+      iV: userData['__v'] is int ? userData['__v'] : null,
     );
   }
 
@@ -46,6 +67,7 @@ class User {
       'email': email,
       'password': password,
       'googleId': googleId,
+      'favorites': favorites,
       'role': role,
       'accessToken': accessToken,
       'refreshToken': refreshToken,

@@ -1,7 +1,7 @@
+import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import '../../../models/category.dart';
 import '../../models/api_response.dart';
 import '../../models/brand.dart';
@@ -15,67 +15,65 @@ import '../../utility/constants.dart';
 import '../../utility/snack_bar_helper.dart';
 
 class DataProvider extends ChangeNotifier {
-  HttpService service = HttpService();
+  final HttpService service = HttpService();
 
   List<Category> _allCategories = [];
   List<Category> _filteredCategories = [];
-
   List<Category> get categories => _filteredCategories;
 
   List<SubCategory> _allSubCategories = [];
   List<SubCategory> _filteredSubCategories = [];
-
   List<SubCategory> get subCategories => _filteredSubCategories;
 
   List<Brand> _allBrands = [];
   List<Brand> _filteredBrands = [];
-
   List<Brand> get brands => _filteredBrands;
 
   List<Product> _allProducts = [];
   List<Product> _filteredProducts = [];
-
   List<Product> get products => _filteredProducts;
-
   List<Product> get allProducts => _allProducts;
 
   List<Poster> _allPosters = [];
   List<Poster> _filteredPosters = [];
-
   List<Poster> get posters => _filteredPosters;
+
   List<Order> _allOrders = [];
   List<Order> _filteredOrders = [];
-
   List<Order> get orders => _filteredOrders;
 
-  DataProvider() {
-    getAllCategory();
-    getAllBrands();
-    getAllProducts();
-    getAllSubCategory();
-    getAllPosters();
+  List<Product> _favoriteProducts = [];
+  List<Product> get favoriteProducts => _favoriteProducts;
+
+  User? user;
+
+  DataProvider();
+
+  Future<void> initializeData() async {
+    await Future.wait([
+      getAllCategory(),
+      getAllBrands(),
+      getAllProducts(),
+      getAllSubCategory(),
+      getAllPosters(),
+    ]);
   }
 
   Future<List<Category>> getAllCategory({bool showSnack = false}) async {
     try {
       Response response = await service.getItems(endpointUrl: "categories");
       if (response.isOk) {
-        ApiResponse<List<Category>> apiResponse =
-            ApiResponse<List<Category>>.fromJson(
-                response.body,
-                (json) => (json as List)
-                    .map((item) => Category.fromJson(item))
-                    .toList());
+        ApiResponse<List<Category>> apiResponse = ApiResponse<List<Category>>.fromJson(
+          response.body,
+              (json) => (json as List).map((item) => Category.fromJson(item)).toList(),
+        );
         _allCategories = apiResponse.data ?? [];
         _filteredCategories = List.from(_allCategories);
         notifyListeners();
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
-      rethrow;
     }
     return _filteredCategories;
   }
@@ -85,9 +83,9 @@ class DataProvider extends ChangeNotifier {
       _filteredCategories = List.from(_allCategories);
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
-      _filteredCategories = _allCategories.where((category) {
-        return (category.name ?? "").toLowerCase().contains(lowerKeyWord);
-      }).toList();
+      _filteredCategories = _allCategories
+          .where((category) => (category.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .toList();
     }
     notifyListeners();
   }
@@ -96,22 +94,17 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "SubCategories");
       if (response.isOk) {
-        ApiResponse<List<SubCategory>> apiResponse =
-            ApiResponse<List<SubCategory>>.fromJson(
-                response.body,
-                (json) => (json as List)
-                    .map((item) => SubCategory.fromJson(item))
-                    .toList());
+        ApiResponse<List<SubCategory>> apiResponse = ApiResponse<List<SubCategory>>.fromJson(
+          response.body,
+              (json) => (json as List).map((item) => SubCategory.fromJson(item)).toList(),
+        );
         _allSubCategories = apiResponse.data ?? [];
         _filteredSubCategories = List.from(_allSubCategories);
         notifyListeners();
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
-      rethrow;
     }
     return _filteredSubCategories;
   }
@@ -121,9 +114,9 @@ class DataProvider extends ChangeNotifier {
       _filteredSubCategories = List.from(_allSubCategories);
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
-      _filteredSubCategories = _allSubCategories.where((subCategory) {
-        return (subCategory.name ?? "").toLowerCase().contains(lowerKeyWord);
-      }).toList();
+      _filteredSubCategories = _allSubCategories
+          .where((subCategory) => (subCategory.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .toList();
     }
     notifyListeners();
   }
@@ -132,26 +125,17 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "brands");
       if (response.isOk) {
-        ApiResponse<List<Brand>> apiResponse =
-            ApiResponse<List<Brand>>.fromJson(
-                response.body,
-                (json) => (json as List)
-                    .map((item) => Brand.fromJson(item))
-                    .toList());
-
+        ApiResponse<List<Brand>> apiResponse = ApiResponse<List<Brand>>.fromJson(
+          response.body,
+              (json) => (json as List).map((item) => Brand.fromJson(item)).toList(),
+        );
         _allBrands = apiResponse.data ?? [];
         _filteredBrands = List.from(_allBrands);
         notifyListeners();
-
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
-      if (showSnack) {
-        SnackBarHelper.showErrorSnackBar(e.toString());
-      }
-      rethrow;
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredBrands;
   }
@@ -161,9 +145,9 @@ class DataProvider extends ChangeNotifier {
       _filteredBrands = List.from(_allBrands);
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
-      _filteredBrands = _allBrands.where((brand) {
-        return (brand.name ?? "").toLowerCase().contains(lowerKeyWord);
-      }).toList();
+      _filteredBrands = _allBrands
+          .where((brand) => (brand.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .toList();
     }
     notifyListeners();
   }
@@ -172,25 +156,17 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: 'products');
       if (response.isOk) {
-        ApiResponse<List<Product>> apiResponse =
-            ApiResponse<List<Product>>.fromJson(
+        ApiResponse<List<Product>> apiResponse = ApiResponse<List<Product>>.fromJson(
           response.body,
-          (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
+              (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
         );
-
         _allProducts = apiResponse.data ?? [];
         _filteredProducts = List.from(_allProducts);
         notifyListeners();
-
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
-      if (showSnack) {
-        SnackBarHelper.showErrorSnackBar(e.toString());
-      }
-      rethrow;
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredProducts;
   }
@@ -204,9 +180,7 @@ class DataProvider extends ChangeNotifier {
         final name = (product.name ?? '').toLowerCase();
         final category = (product.proCategoryId?.name ?? '').toLowerCase();
         final brand = (product.proBrandId?.name ?? '').toLowerCase();
-        return name.contains(lowerKeyword) ||
-            category.contains(lowerKeyword) ||
-            brand.contains(lowerKeyword);
+        return name.contains(lowerKeyword) || category.contains(lowerKeyword) || brand.contains(lowerKeyword);
       }).toList();
     }
     notifyListeners();
@@ -216,30 +190,17 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "posters");
       if (response.isOk) {
-        ApiResponse<List<Poster>> apiResponse =
-            ApiResponse<List<Poster>>.fromJson(
+        ApiResponse<List<Poster>> apiResponse = ApiResponse<List<Poster>>.fromJson(
           response.body,
-          (json) =>
-              (json as List).map((item) => Poster.fromJson(item)).toList(),
+              (json) => (json as List).map((item) => Poster.fromJson(item)).toList(),
         );
-
         _allPosters = apiResponse.data ?? [];
         _filteredPosters = List.from(_allPosters);
         notifyListeners();
-
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
-      } else {
-        if (showSnack) {
-          SnackBarHelper.showErrorSnackBar(
-            response.body?['message'] ?? response.statusText ?? "Server Error",
-          );
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
-      rethrow;
     }
     return _filteredPosters;
   }
@@ -247,44 +208,65 @@ class DataProvider extends ChangeNotifier {
   Future<void> getAllOrderByUser(User? user, {bool showSnack = false}) async {
     try {
       final userId = user?.sId;
-
-      Response response = await service.getItems(
-        endpointUrl: 'orders/orderByUserId/$userId',
-      );
-
+      Response response = await service.getItems(endpointUrl: 'orders/orderByUserId/$userId');
       if (response.isOk) {
-        ApiResponse<List<Order>> apiResponse =
-            ApiResponse<List<Order>>.fromJson(
+        ApiResponse<List<Order>> apiResponse = ApiResponse<List<Order>>.fromJson(
           response.body,
-          (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
+              (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
         );
-
         _allOrders = apiResponse.data ?? [];
         _filteredOrders = List.from(_allOrders);
-
         notifyListeners();
-
-        if (showSnack) {
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        }
+        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       }
     } catch (e) {
-      if (showSnack) {
-        SnackBarHelper.showErrorSnackBar(e.toString());
-      }
+      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
   }
 
   double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
-    if (originalPrice <= 0) {
-      throw ArgumentError('Original price must be greater than zero.');
-    }
+    if (originalPrice <= 0) return 0;
     num finalDiscountedPrice = discountedPrice ?? originalPrice;
-    if (finalDiscountedPrice >= originalPrice) {
-      return 0;
+    if (finalDiscountedPrice >= originalPrice) return 0;
+    return ((originalPrice - finalDiscountedPrice) / originalPrice) * 100;
+  }
+
+  Future<List<Product>> getFavoriteProducts({bool showSnack = false}) async {
+    try {
+      Response response = await service.getItems(endpointUrl: "users/favorites");
+      if (response.isOk && response.body != null) {
+        final List<dynamic> favList = response.body['data'] ?? [];
+        _favoriteProducts = favList.map((item) => Product.fromJson(item)).toList();
+        if (user != null) {
+          user!.favorites = List.from(_favoriteProducts);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      log("Favorite Parsing Error: $e");
     }
-    double discount =
-        ((originalPrice - finalDiscountedPrice) / originalPrice) * 100;
-    return discount;
+    return _favoriteProducts;
+  }
+
+  Future<void> toggleFavoriteApi(String productId) async {
+    try {
+      bool isCurrentlyFavorite = _favoriteProducts.any((p) => p.sId == productId);
+      Response response = await service.addItem(
+        endpointUrl: 'users/favorite',
+        itemData: {'productId': productId},
+      );
+
+      if (response.isOk) {
+        await getFavoriteProducts();
+        SnackBarHelper.showSuccessSnackBar(
+          isCurrentlyFavorite ? "Removed from favorites" : "Added to favorites",
+        );
+        notifyListeners();
+      } else {
+        SnackBarHelper.showErrorSnackBar(response.statusText ?? "Update failed");
+      }
+    } catch (e) {
+      SnackBarHelper.showErrorSnackBar("Connection error: $e");
+    }
   }
 }

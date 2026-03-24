@@ -1,3 +1,5 @@
+import 'package:e_commerce_flutter/core/data/data_provider.dart';
+
 import '../../utility/extensions.dart';
 import 'provider/favorite_provider.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +12,8 @@ class FavoriteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Future.delayed(Duration.zero, () {
-      context.favoriteProvider.loadFavoriteItems();
-    });
+    Future.microtask(() => context.read<DataProvider>().getFavoriteProducts());
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -24,14 +25,23 @@ class FavoriteScreen extends StatelessWidget {
         ),
       ),
       body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Consumer<FavoriteProvider>(
-            builder: (context, favoriteProvider, child) {
-              return ProductGridView(
-                items: favoriteProvider.favoriteProduct,
+        padding: const EdgeInsets.all(20),
+        child: Consumer<FavoriteProvider>(
+          builder: (context, dataProvider, child) {
+            final items = dataProvider.favoriteProducts;
+
+            if (items.isEmpty) {
+              return const Center(
+                child: Text("No favorites yet"),
               );
-            },
-          )),
+            }
+
+            return ProductGridView(
+              items: items,
+            );
+          },
+        ),
+      ),
     );
   }
 }

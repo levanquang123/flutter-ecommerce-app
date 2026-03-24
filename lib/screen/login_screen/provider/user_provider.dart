@@ -29,26 +29,35 @@ class UserProvider extends ChangeNotifier {
           endpointUrl: 'users/login', itemData: loginData);
 
       if (response.isOk) {
+        log('Dữ liệu API trả về: ${response.body}');
         final ApiResponse<User> apiResponse = ApiResponse<User>.fromJson(
             response.body,
                 (json) => User.fromJson(json as Map<String, dynamic>));
 
         if (apiResponse.success == true) {
           User? user = apiResponse.data;
+
           await saveLoginInfo(user);
+          _dataProvider.user = user;
+          _dataProvider.notifyListeners();
 
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-          log('Login success');
           return null;
         } else {
           return apiResponse.message ?? 'Failed to Login';
         }
+        // Trong UserProvider
       } else {
-        String errorMsg = response.body?['message'] ?? response.statusText ?? 'Unknown error';
+        // Kiểm tra nếu body là Map thì lấy 'message', nếu không lấy statusText
+        String errorMsg = 'Unknown error';
+        if (response.body is Map) {
+          errorMsg = response.body['message'] ?? 'Unknown error';
+        } else {
+          errorMsg = response.statusText ?? 'Server Error';
+        }
         return errorMsg;
       }
     } catch (e) {
-      log('Login Error: $e');
       return 'An error occurred: $e';
     }
   }
@@ -64,6 +73,7 @@ class UserProvider extends ChangeNotifier {
       await service.addItem(endpointUrl: 'users/register', itemData: signupData);
 
       if (response.isOk) {
+        log('Dữ liệu API trả về: ${response.body}');
         final ApiResponse<User> apiResponse = ApiResponse<User>.fromJson(
             response.body,
                 (json) => User.fromJson(json as Map<String, dynamic>));
@@ -75,8 +85,15 @@ class UserProvider extends ChangeNotifier {
         } else {
           return apiResponse.message ?? 'Failed to Register';
         }
+        // Trong UserProvider
       } else {
-        String errorMsg = response.body?['message'] ?? response.statusText ?? 'Unknown error';
+        // Kiểm tra nếu body là Map thì lấy 'message', nếu không lấy statusText
+        String errorMsg = 'Unknown error';
+        if (response.body is Map) {
+          errorMsg = response.body['message'] ?? 'Unknown error';
+        } else {
+          errorMsg = response.statusText ?? 'Server Error';
+        }
         return errorMsg;
       }
     } catch (e) {
@@ -88,6 +105,11 @@ class UserProvider extends ChangeNotifier {
   Future<void> saveLoginInfo(User? loginUser) async {
     if (loginUser != null) {
       await box.write(USER_INFO_BOX, loginUser.toJson());
+
+      if (loginUser.accessToken != null) {
+        await box.write(TOKEN, loginUser.accessToken);
+        log('Token saved: ${loginUser.accessToken}');
+      }
     }
   }
 
@@ -99,6 +121,10 @@ class UserProvider extends ChangeNotifier {
 
   logOutUser() {
     box.remove(USER_INFO_BOX);
-    Get.offAll(const LoginScreen());
+    box.remove(TOKEN);
+    _dataProvider.user = null;
+    _dataProvider.favoriteProducts.clear();
+    notifyListeners();
+    Get.offAll(() => const LoginScreen());
   }
 }

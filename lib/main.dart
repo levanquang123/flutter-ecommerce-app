@@ -1,5 +1,13 @@
-import 'package:e_commerce_flutter/utility/constants.dart';
+import 'dart:ui' show PointerDeviceKind;
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_cart/cart.dart';
 
+import 'core/data/data_provider.dart';
+import 'models/user.dart';
 import 'screen/home_screen.dart';
 import 'screen/login_screen/login_screen.dart';
 import 'screen/login_screen/provider/user_provider.dart';
@@ -9,47 +17,95 @@ import 'screen/product_details_screen/provider/product_detail_provider.dart';
 import 'screen/product_favorite_screen/provider/favorite_provider.dart';
 import 'screen/profile_screen/provider/profile_provider.dart';
 import 'utility/app_theme.dart';
-import 'utility/extensions.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_cart/cart.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'dart:ui' show PointerDeviceKind;
-import 'package:provider/provider.dart';
-import 'core/data/data_provider.dart';
-import 'models/user.dart';
+import 'utility/constants.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await GetStorage.init();
-  var cart = FlutterCart();
+
+  await Future.wait([
+    GetStorage.init(),
+  ]);
+
+  final cart = FlutterCart();
+  await cart.initializeCart(isPersistenceSupportEnabled: true);
+
   OneSignal.initialize(ONE_SIGNAL_APP_ID);
   OneSignal.Notifications.requestPermission(true);
-  await cart.initializeCart(isPersistenceSupportEnabled: true);
+
+  final box = GetStorage();
+  final dynamic userRaw = box.read(USER_INFO_BOX);
+  User? loginUser;
+
+  if (userRaw != null && userRaw is Map<String, dynamic>) {
+    loginUser = User.fromJson(userRaw);
+  }
+
+  final bool isAuthenticated = loginUser?.sId != null && box.read(TOKEN) != null;
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => DataProvider()),
-        ChangeNotifierProvider(create: (context) => UserProvider(context.dataProvider)),
-        ChangeNotifierProvider(create: (context) => ProfileProvider(context.dataProvider)),
-        ChangeNotifierProvider(create: (context) => ProductByCategoryProvider(context.dataProvider)),
-        ChangeNotifierProvider(create: (context) => ProductDetailProvider(context.dataProvider)),
-        ChangeNotifierProvider(create: (context) => CartProvider(context.userProvider)),
-        ChangeNotifierProvider(create: (context) => FavoriteProvider(context.dataProvider)),
+        ChangeNotifierProvider(
+          create: (_) => DataProvider()..user = loginUser,
+        ),
+        ChangeNotifierProxyProvider<DataProvider, UserProvider>(
+          create: (context) => UserProvider(context.read<DataProvider>()),
+          update: (_, data, __) => UserProvider(data),
+        ),
+        ChangeNotifierProxyProvider<DataProvider, ProfileProvider>(
+          create: (context) => ProfileProvider(context.read<DataProvider>()),
+          update: (_, data, __) => ProfileProvider(data),
+        ),
+        ChangeNotifierProxyProvider<DataProvider, ProductByCategoryProvider>(
+          create: (context) => ProductByCategoryProvider(context.read<DataProvider>()),
+          update: (_, data, __) => ProductByCategoryProvider(data),
+        ),
+        ChangeNotifierProxyProvider<DataProvider, ProductDetailProvider>(
+          create: (context) => ProductDetailProvider(context.read<DataProvider>()),
+          update: (_, data, __) => ProductDetailProvider(data),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, CartProvider>(
+          create: (context) => CartProvider(context.read<UserProvider>()),
+          update: (_, userProv, __) => CartProvider(userProv),
+        ),
+        ChangeNotifierProxyProvider<DataProvider, FavoriteProvider>(
+          create: (context) => FavoriteProvider(context.read<DataProvider>()),
+          update: (_, data, __) => FavoriteProvider(data),
+        ),
       ],
-      child: const MyApp(),
+      child: MyApp(isAuthenticated: isAuthenticated),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  final bool isAuthenticated;
+  const MyApp({super.key, required this.isAuthenticated});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dataProvider = context.read<DataProvider>();
+      _loadInitialData(dataProvider);
+    });
+  }
+
+  void _loadInitialData(DataProvider provider) async {
+    await provider.initializeData();
+
+    if (widget.isAuthenticated) {
+      await provider.getFavoriteProducts();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    User? loginUser = context.userProvider.getLoginUsr();
     return GetMaterialApp(
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
@@ -58,8 +114,8 @@ class MyApp extends StatelessWidget {
         },
       ),
       debugShowCheckedModeBanner: false,
-      home: loginUser?.sId == null ? const LoginScreen() : const HomeScreen(),
       theme: AppTheme.lightAppTheme,
+      home: widget.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );
   }
 }

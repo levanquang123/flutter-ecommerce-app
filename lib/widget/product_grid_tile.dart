@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/data/data_provider.dart';
 import '../models/product.dart';
 import '../screen/product_favorite_screen/provider/favorite_provider.dart';
 import '../utility/extensions.dart';
@@ -44,15 +45,17 @@ class ProductGridTile extends StatelessWidget {
                 ),
               ),
             ),
-            Consumer<FavoriteProvider>(
-              builder: (context, favoriteProvider, child) {
+            Consumer<DataProvider>(
+              builder: (context, dataProvider, child) {
+                bool isFavorite = dataProvider.user?.favorites?.any((p) => p.sId == product.sId) ?? false;
+
                 return IconButton(
-                  icon:  Icon(
+                  icon: Icon(
                     Icons.favorite,
-                    color: favoriteProvider.checkIsItemFavorite(product.sId ?? '') ? Colors.red : const Color(0xFFA6A3A0) ,
+                    color: isFavorite ? Colors.red : const Color(0xFFA6A3A0),
                   ),
                   onPressed: () {
-                    context.favoriteProvider.updateToFavoriteList(product.sId ?? '');
+                    dataProvider.toggleFavoriteApi(product.sId ?? '');
                   },
                 );
               },
