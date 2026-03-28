@@ -34,18 +34,33 @@ class ProductDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                //? product image section
+
                 Container(
-                  height: height * 0.42,
+                  height: height * 0.48,
                   width: width,
                   decoration: const BoxDecoration(
                     color: Color(0xFFE5E6E8),
-                    borderRadius: BorderRadius.only(
-                      bottomRight: Radius.circular(200),
-                      bottomLeft: Radius.circular(200),
+                  ),
+                  child: Center(
+                    child: Container(
+                      height: width * 0.85,
+                      width: width * 0.85,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          )
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: CarouselSlider(items: product.images ?? []),
+                      ),
                     ),
                   ),
-                  child: CarouselSlider(items: product.images ?? []),
                 ),
                 const SizedBox(height: 20),
                 Padding(
@@ -92,10 +107,10 @@ class ProductDetailScreen extends StatelessWidget {
                       const SizedBox(height: 30),
                       product.proVariantId!.isNotEmpty
                           ? Text(
-                              'Available ${product.proVariantTypeId?.type}',
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 16),
-                            )
+                        'Available ${product.proVariantTypeId?.type}',
+                        style: const TextStyle(
+                            color: Colors.red, fontSize: 16),
+                      )
                           : const SizedBox(),
                       Consumer<ProductDetailProvider>(
                         builder: (context, proDetailProvider, child) {
@@ -124,8 +139,8 @@ class ProductDetailScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: product.quantity != 0
                               ? () {
-                                  context.proDetailProvider.addToCart(product);
-                                }
+                            context.proDetailProvider.addToCart(product, context);
+                          }
                               : null,
                           child: const Text("Add to cart",
                               style: TextStyle(color: Colors.white)),

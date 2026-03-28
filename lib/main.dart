@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_cart/cart.dart';
 
 import 'core/data/data_provider.dart';
 import 'models/user.dart';
@@ -25,9 +24,6 @@ Future<void> main() async {
   await Future.wait([
     GetStorage.init(),
   ]);
-
-  final cart = FlutterCart();
-  await cart.initializeCart(isPersistenceSupportEnabled: true);
 
   OneSignal.initialize(ONE_SIGNAL_APP_ID);
   OneSignal.Notifications.requestPermission(true);
@@ -50,27 +46,26 @@ Future<void> main() async {
         ),
         ChangeNotifierProxyProvider<DataProvider, UserProvider>(
           create: (context) => UserProvider(context.read<DataProvider>()),
-          update: (_, data, __) => UserProvider(data),
+          update: (_, data, prev) => prev ?? UserProvider(data),
         ),
-        ChangeNotifierProxyProvider<DataProvider, ProfileProvider>(
-          create: (context) => ProfileProvider(context.read<DataProvider>()),
-          update: (_, data, __) => ProfileProvider(data),
+        ChangeNotifierProxyProvider<UserProvider, ProfileProvider>(
+          create: (context) => ProfileProvider(context.read<UserProvider>()),
+          update: (_, userProvider, prev) => prev ?? ProfileProvider(userProvider),
         ),
         ChangeNotifierProxyProvider<DataProvider, ProductByCategoryProvider>(
           create: (context) => ProductByCategoryProvider(context.read<DataProvider>()),
-          update: (_, data, __) => ProductByCategoryProvider(data),
+          update: (_, data, prev) => prev ?? ProductByCategoryProvider(data),
         ),
-        ChangeNotifierProxyProvider<DataProvider, ProductDetailProvider>(
-          create: (context) => ProductDetailProvider(context.read<DataProvider>()),
-          update: (_, data, __) => ProductDetailProvider(data),
+        ChangeNotifierProvider(
+          create: (context) => ProductDetailProvider(),
         ),
         ChangeNotifierProxyProvider<UserProvider, CartProvider>(
           create: (context) => CartProvider(context.read<UserProvider>()),
-          update: (_, userProv, __) => CartProvider(userProv),
+          update: (_, userProvider, prev) => prev ?? CartProvider(userProvider),
         ),
         ChangeNotifierProxyProvider<DataProvider, FavoriteProvider>(
           create: (context) => FavoriteProvider(context.read<DataProvider>()),
-          update: (_, data, __) => FavoriteProvider(data),
+          update: (_, data, prev) => prev ?? FavoriteProvider(data),
         ),
       ],
       child: MyApp(isAuthenticated: isAuthenticated),
@@ -92,14 +87,25 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dataProvider = context.read<DataProvider>();
-      _loadInitialData(dataProvider);
+      final userProvider = context.read<UserProvider>();
+      final cartProvider = context.read<CartProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+      _loadInitialData(dataProvider, userProvider, cartProvider, profileProvider);
     });
   }
 
-  void _loadInitialData(DataProvider provider) async {
+  void _loadInitialData(
+    DataProvider provider,
+    UserProvider userProvider,
+    CartProvider cartProvider,
+    ProfileProvider profileProvider,
+  ) async {
     await provider.initializeData();
 
     if (widget.isAuthenticated) {
+      await userProvider.fetchCurrentUserProfile();
+      profileProvider.fillControllersFromCurrentUser();
+      await cartProvider.loadCart();
       await provider.getFavoriteProducts();
     }
   }

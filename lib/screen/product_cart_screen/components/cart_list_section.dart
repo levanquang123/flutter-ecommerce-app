@@ -1,12 +1,12 @@
 import 'package:e_commerce_flutter/utility/extensions.dart';
-
-import '../../../utility/utility_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cart/model/cart_model.dart';
 
+import '../../../models/cart.dart';
+import '../../../models/product.dart';
+import '../../../utility/utility_extension.dart';
 
 class CartListSection extends StatelessWidget {
-  final List<CartModel> cartProducts;
+  final List<CartItem> cartProducts;
 
   const CartListSection({
     super.key,
@@ -16,11 +16,78 @@ class CartListSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: SingleChildScrollView(
-        child: Column(
-          children: cartProducts.mapWithIndex((index, _) {
-            CartModel cartItem = cartProducts[index];
-            return Container(
+      child: ListView.builder(
+        itemCount: cartProducts.length,
+        itemBuilder: (context, index) {
+          final cartItem = cartProducts[index];
+          final product = context.dataProvider.allProducts.firstWhere(
+                (p) => p.sId == cartItem.productId,
+            orElse: () => const Product(),
+          );
+
+          final productImage = product.images.safeElementAt(0)?.url ?? '';
+          final productName = product.name ?? 'Product';
+
+          return Dismissible(
+            key: ValueKey('${cartItem.productId}_${cartItem.variant}_$index'),
+            direction: DismissDirection.endToStart, // vuốt từ phải qua trái
+            background: Container(
+              margin: const EdgeInsets.all(15),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              alignment: Alignment.centerRight,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(
+                    Icons.delete_outline,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            confirmDismiss: (_) async {
+              return await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Remove item'),
+                  content: Text('Do you want to remove "$productName" from cart?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      child: const Text(
+                        'Remove',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ) ??
+                  false;
+            },
+            onDismissed: (_) async {
+              await context.cartProvider.removeCartItemById(
+                productId: cartItem.productId,
+                variant: cartItem.variant,
+              );
+            },
+            child: Container(
               width: double.infinity,
               margin: const EdgeInsets.all(15),
               padding: const EdgeInsets.all(15),
@@ -38,7 +105,7 @@ class CartListSection extends StatelessWidget {
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.primaries[index],
+                      color: Colors.primaries[index % Colors.primaries.length],
                     ),
                     child: ClipRRect(
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
@@ -46,21 +113,36 @@ class CartListSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         child: Padding(
                           padding: const EdgeInsets.all(5),
-                          child: Image.network(
-                            cartItem.productImages.safeElementAt(0) ?? '',
+                          child: productImage.isEmpty
+                              ? const SizedBox(
                             width: 100,
                             height: 90,
-                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                            child: Icon(Icons.image_not_supported),
+                          )
+                              : Image.network(
+                            productImage,
+                            width: 100,
+                            height: 90,
+                            loadingBuilder: (
+                                BuildContext context,
+                                Widget child,
+                                ImageChunkEvent? loadingProgress,
+                                ) {
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
                                   value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null, // Progress indicator.
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                      : null,
                                 ),
                               );
                             },
-                            errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                            errorBuilder: (
+                                BuildContext context,
+                                Object exception,
+                                StackTrace? stackTrace,
+                                ) {
                               return const Icon(Icons.error, color: Colors.red);
                             },
                           ),
@@ -72,7 +154,7 @@ class CartListSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        cartItem.productName,
+                        productName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -82,15 +164,23 @@ class CartListSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        '${cartItem.quantity}',
+                        'Qty: ${cartItem.quantity}',
                         style: TextStyle(
                           color: Colors.black.withOpacity(0.5),
                           fontWeight: FontWeight.w400,
                         ),
                       ),
+                      if (cartItem.variant.isNotEmpty)
+                        Text(
+                          'Variant: ${cartItem.variant}',
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.5),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                       const SizedBox(height: 5),
                       Text(
-                        "\$${cartItem.variants.safeElementAt(0)?.price}",
+                        '\$${cartItem.priceAtAdd}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 23,
@@ -98,7 +188,6 @@ class CartListSection extends StatelessWidget {
                       ),
                     ],
                   ),
-                  // Add and remove cart item
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -130,16 +219,19 @@ class CartListSection extends StatelessWidget {
                           onPressed: () {
                             context.cartProvider.updateCart(cartItem, 1, context);
                           },
-                          icon: const Icon(Icons.add, color: Color(0xFFEC6813)),
+                          icon: const Icon(
+                            Icons.add,
+                            color: Color(0xFFEC6813),
+                          ),
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

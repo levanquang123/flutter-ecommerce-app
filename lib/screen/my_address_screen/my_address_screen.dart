@@ -8,7 +8,7 @@ class MyAddressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.profileProvider.retrieveSavedAddress();
+    context.profileProvider.fillControllersFromCurrentUser();
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -36,9 +36,15 @@ class MyAddressPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CustomTextField(
+                            labelText: 'Full Name',
+                            onSave: (value) {},
+                            controller: context.profileProvider.fullNameController,
+                            validator: (value) => value!.isEmpty ? 'Please enter full name' : null,
+                          ),
+                          CustomTextField(
                             labelText: 'Phone',
                             onSave: (value) {},
-                            inputType: TextInputType.number,
+                            inputType: TextInputType.phone,
                             controller: context.profileProvider.phoneController,
                             validator: (value) => value!.isEmpty ? 'Please enter a phone number' : null,
                           ),
@@ -95,9 +101,9 @@ class MyAddressPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (context.profileProvider.addressFormKey.currentState!.validate()) {
-                          context.profileProvider.storeAddress();
+                          await context.profileProvider.updateAddress();
                         }
                       },
                       child: const Text('Update Address', style: TextStyle(fontSize: 18)),

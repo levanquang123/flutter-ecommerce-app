@@ -51,7 +51,25 @@ class HttpService extends GetConnect {
 
   Future<Response> updateItem({required String endpointUrl, required String itemId, required dynamic itemData}) async {
     try {
-      final response = await put(_buildUrl('$endpointUrl/$itemId'), itemData);
+      final response = await put(
+        _buildUrl('$endpointUrl/$itemId'),
+        itemData,
+        headers: _getHeaders(),
+      );
+      return response;
+    } catch (e) {
+      return Response(body: {'message': e.toString()}, statusCode: 500);
+    }
+  }
+
+  Future<Response> putItem({required String endpointUrl, required dynamic itemData}) async {
+    try {
+      final response = await put(
+        _buildUrl(endpointUrl),
+        itemData,
+        headers: _getHeaders(),
+      );
+      log('[PUT] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
       return Response(body: {'message': e.toString()}, statusCode: 500);
@@ -60,7 +78,28 @@ class HttpService extends GetConnect {
 
   Future<Response> deleteItem({required String endpointUrl, required String itemId}) async {
     try {
-      final response = await delete(_buildUrl('$endpointUrl/$itemId'));
+      final response = await delete(
+        _buildUrl('$endpointUrl/$itemId'),
+        headers: _getHeaders(),
+      );
+      return response;
+    } catch (e) {
+      return Response(body: {'message': e.toString()}, statusCode: 500);
+    }
+  }
+
+  Future<Response> deleteWithBody({
+    required String endpointUrl,
+    required dynamic body,
+  }) async {
+    try {
+      final response = await request(
+        _buildUrl(endpointUrl),
+        'DELETE',
+        body: body,
+        headers: _getHeaders(),
+      );
+      log('[DELETE] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
       return Response(body: {'message': e.toString()}, statusCode: 500);

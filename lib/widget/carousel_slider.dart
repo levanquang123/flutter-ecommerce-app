@@ -23,36 +23,39 @@ class _CarouselSliderState extends State<CarouselSlider> {
 
   @override
   Widget build(BuildContext context) {
-    var height = MediaQuery.of(context).size.height;
-    return Column(
+    return Stack(
+      alignment: Alignment.bottomCenter,
       children: [
-        SizedBox(
-          height: height * 0.32,
+        Positioned.fill(
           child: PageView.builder(
             itemCount: widget.items.length,
             onPageChanged: (int currentIndex) {
-              newIndex = currentIndex;
-              setState(() {});
+              setState(() => newIndex = currentIndex);
             },
             itemBuilder: (_, index) {
-              return FittedBox(
-                fit: BoxFit.none,
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
                 child: CustomNetworkImage(
                   imageUrl: widget.items.safeElementAt(index)?.url ?? '',
                   fit: BoxFit.contain,
-                  scale: 3.0,
                 ),
               );
             },
           ),
         ),
-        AnimatedSmoothIndicator(
-          effect: const WormEffect(
-            dotColor: Colors.white,
-            activeDotColor: AppColor.darkOrange,
+        Positioned(
+          bottom: 20,
+          child: AnimatedSmoothIndicator(
+            effect: const WormEffect(
+              dotColor: Colors.black12,
+              activeDotColor: AppColor.darkOrange,
+              dotHeight: 7,
+              dotWidth: 7,
+              spacing: 5,
+            ),
+            count: widget.items.length,
+            activeIndex: newIndex,
           ),
-          count: widget.items.length,
-          activeIndex: newIndex,
         )
       ],
     );

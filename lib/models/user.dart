@@ -1,4 +1,5 @@
 import 'package:e_commerce_flutter/models/product.dart';
+import 'address.dart';
 
 class User {
   final String? sId;
@@ -7,6 +8,7 @@ class User {
   final String? googleId;
   final String? role;
   List<Product>? favorites;
+  final Address? address;
   final String? accessToken;
   final String? refreshToken;
   final String? createdAt;
@@ -20,6 +22,7 @@ class User {
     this.googleId,
     this.favorites,
     this.role,
+    this.address,
     this.accessToken,
     this.refreshToken,
     this.createdAt,
@@ -43,6 +46,9 @@ class User {
       role: userData['role']?.toString(),
 
       accessToken: (json['token'] ?? json['accessToken'] ?? userData['accessToken'] ?? userData['token'])?.toString(),
+      address: userData['address'] is Map<String, dynamic>
+          ? Address.fromJson(userData['address'])
+          : null,
 
       favorites: userData['favorites'] != null && userData['favorites'] is List
           ? List<Product>.from((userData['favorites'] as List).map((x) {
@@ -65,10 +71,10 @@ class User {
     return {
       '_id': sId,
       'email': email,
-      'password': password,
       'googleId': googleId,
-      'favorites': favorites,
+      'favorites': favorites?.map((e) => e.toJson()).toList() ?? [],
       'role': role,
+      'address': address?.toJson(),
       'accessToken': accessToken,
       'refreshToken': refreshToken,
       'createdAt': createdAt,

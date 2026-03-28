@@ -11,7 +11,7 @@ import '../../../widget/custom_text_field.dart';
 
 void showCustomBottomSheet(BuildContext context) {
   context.cartProvider.clearCouponDiscount();
-  context.cartProvider.retrieveSavedAddress();
+  context.cartProvider.fillAddressFromCurrentUser();
   showModalBottomSheet(
     context: context,
     builder: (context) {
@@ -63,7 +63,7 @@ void showCustomBottomSheet(BuildContext context) {
                               height: 65,
                               labelText: 'Phone',
                               onSave: (value) {},
-                              inputType: TextInputType.number,
+                              inputType: TextInputType.phone,
                               controller: context.cartProvider.phoneController,
                               validator: (value) => value!.isEmpty
                                   ? 'Please enter a phone number'

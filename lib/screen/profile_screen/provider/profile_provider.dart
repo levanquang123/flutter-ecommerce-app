@@ -1,43 +1,87 @@
-import '../../../core/data/data_provider.dart';
-import '../../../utility/constants.dart';
-import '../../../utility/snack_bar_helper.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:get_storage/get_storage.dart';
+
+import '../../../models/address.dart';
+import '../../../services/http_services.dart';
+import '../../../utility/snack_bar_helper.dart';
+import '../../login_screen/provider/user_provider.dart';
 
 class ProfileProvider extends ChangeNotifier {
- final DataProvider _dataProvider;
- final box = GetStorage();
+  final UserProvider _userProvider;
+  final HttpService _service = HttpService();
 
- final GlobalKey<FormState> addressFormKey = GlobalKey<FormState>();
- TextEditingController phoneController = TextEditingController();
- TextEditingController streetController = TextEditingController();
- TextEditingController cityController = TextEditingController();
- TextEditingController stateController = TextEditingController();
- TextEditingController postalCodeController = TextEditingController();
- TextEditingController countryController = TextEditingController();
- TextEditingController couponController = TextEditingController();
+  final GlobalKey<FormState> addressFormKey = GlobalKey<FormState>();
+  TextEditingController fullNameController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  TextEditingController streetController = TextEditingController();
+  TextEditingController cityController = TextEditingController();
+  TextEditingController stateController = TextEditingController();
+  TextEditingController postalCodeController = TextEditingController();
+  TextEditingController countryController = TextEditingController();
 
- ProfileProvider(this._dataProvider) {
-  retrieveSavedAddress();
- }
+  ProfileProvider(this._userProvider) {
+    fillControllersFromCurrentUser();
+  }
 
- void storeAddress() {
-  box.write(PHONE_KEY, phoneController.text);
-  box.write(STREET_KEY, streetController.text);
-  box.write(CITY_KEY, cityController.text);
-  box.write(STATE_KEY, stateController.text);
-  box.write(POSTAL_CODE_KEY, postalCodeController.text);
-  box.write(COUNTRY_KEY, countryController.text);
-  SnackBarHelper.showSuccessSnackBar('Address Stored Successfully');
- }
+  void fillControllersFromCurrentUser() {
+    fillControllers(_userProvider.currentUser?.address);
+  }
 
-// Method to retrieve saved address values
- void retrieveSavedAddress() {
-  phoneController.text = box.read(PHONE_KEY) ?? '';
-  streetController.text = box.read(STREET_KEY) ?? '';
-  cityController.text = box.read(CITY_KEY) ?? '';
-  stateController.text = box.read(STATE_KEY) ?? '';
-  postalCodeController.text = box.read(POSTAL_CODE_KEY) ?? '';
-  countryController.text = box.read(COUNTRY_KEY) ?? '';
- }
+  void fillControllers(Address? address) {
+    fullNameController.text = address?.fullName ?? '';
+    phoneController.text = address?.phone ?? '';
+    streetController.text = address?.street ?? '';
+    cityController.text = address?.city ?? '';
+    stateController.text = address?.state ?? '';
+    postalCodeController.text = address?.postalCode ?? '';
+    countryController.text = address?.country ?? '';
+    notifyListeners();
+  }
+
+  void clearAddressForm() {
+    fullNameController.clear();
+    phoneController.clear();
+    streetController.clear();
+    cityController.clear();
+    stateController.clear();
+    postalCodeController.clear();
+    countryController.clear();
+    notifyListeners();
+  }
+
+  Map<String, dynamic> _addressPayload() {
+    return {
+      'fullName': fullNameController.text.trim(),
+      'phone': phoneController.text.trim(),
+      'street': streetController.text.trim(),
+      'city': cityController.text.trim(),
+      'state': stateController.text.trim(),
+      'postalCode': postalCodeController.text.trim(),
+      'country': countryController.text.trim(),
+    };
+  }
+
+  Future<bool> updateAddress() async {
+    try {
+      final response = await _service.putItem(
+        endpointUrl: 'users/me/address',
+        itemData: _addressPayload(),
+      );
+
+      if (!response.isOk) {
+        final message = response.body is Map<String, dynamic>
+            ? response.body['message']?.toString()
+            : response.statusText;
+        SnackBarHelper.showErrorSnackBar(message ?? 'Update address failed');
+        return false;
+      }
+
+      await _userProvider.fetchCurrentUserProfile(showSnack: false);
+      fillControllersFromCurrentUser();
+      SnackBarHelper.showSuccessSnackBar('Address updated successfully');
+      return true;
+    } catch (e) {
+      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      return false;
+    }
+  }
 }
