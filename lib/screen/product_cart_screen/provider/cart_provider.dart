@@ -2,9 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:get/get.dart';
 
-import '../../../core/data/data_provider.dart';
 import '../../../models/api_response.dart';
 import '../../../models/cart.dart';
 import '../../../models/coupon.dart';
@@ -34,6 +32,7 @@ class CartProvider extends ChangeNotifier {
   Coupon? couponApplied;
   double couponCodeDiscount = 0;
   String selectedPaymentOption = 'cod';
+  bool isSubmittingOrder = false;
 
   CartProvider(this._userProvider);
 
@@ -42,6 +41,30 @@ class CartProvider extends ChangeNotifier {
   bool _isValidObjectId(String? value) {
     if (value == null) return false;
     return RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(value);
+  }
+
+  ProductVariant? _findVariantById(Product product, String? variantId) {
+    if (!_isValidObjectId(variantId)) return null;
+    for (final variant in (product.variants ?? const <ProductVariant>[])) {
+      if (variant.sId == variantId) return variant;
+    }
+    return null;
+  }
+
+  bool _isAddressComplete(dynamic address) {
+    if (address == null) return false;
+    final phone = (address.phone ?? '').toString().trim();
+    final street = (address.street ?? '').toString().trim();
+    final city = (address.city ?? '').toString().trim();
+    final state = (address.state ?? '').toString().trim();
+    final postalCode = (address.postalCode ?? '').toString().trim();
+    final country = (address.country ?? '').toString().trim();
+    return phone.isNotEmpty &&
+        street.isNotEmpty &&
+        city.isNotEmpty &&
+        state.isNotEmpty &&
+        postalCode.isNotEmpty &&
+        country.isNotEmpty;
   }
 
   Future<void> getCartItems() async {
@@ -83,11 +106,46 @@ class CartProvider extends ChangeNotifier {
 
   Future<bool> addItemFromProduct({
     required Product product,
-    required String variant,
+    required String variantId,
     int quantity = 1,
   }) async {
     if (!_isValidObjectId(product.sId)) {
       SnackBarHelper.showErrorSnackBar('Invalid product id');
+      return false;
+    }
+
+    if (quantity < 1) {
+      SnackBarHelper.showErrorSnackBar('Quantity must be at least 1');
+      return false;
+    }
+
+    final hasVariants = (product.variants ?? const <ProductVariant>[]).isNotEmpty;
+    ProductVariant? selectedVariant;
+
+    if (hasVariants) {
+      selectedVariant = _findVariantById(product, variantId);
+      if (selectedVariant?.sId == null) {
+        SnackBarHelper.showErrorSnackBar('Please select a valid variant');
+        return false;
+      }
+      if (!(selectedVariant!.isActive)) {
+        SnackBarHelper.showErrorSnackBar('Selected variant is inactive');
+        return false;
+      }
+      if ((selectedVariant.quantity ?? 0) < quantity) {
+        SnackBarHelper.showErrorSnackBar(
+          (selectedVariant.quantity ?? 0) == 0
+              ? 'Selected variant is out of stock'
+              : 'Only ${selectedVariant.quantity} items available for selected variant',
+        );
+        return false;
+      }
+    } else if ((product.quantity ?? 0) < quantity) {
+      SnackBarHelper.showErrorSnackBar(
+        (product.quantity ?? 0) == 0
+            ? 'Out of stock'
+            : 'Only ${product.quantity} items available',
+      );
       return false;
     }
 
@@ -97,7 +155,7 @@ class CartProvider extends ChangeNotifier {
         itemData: {
           'productId': product.sId,
           'quantity': quantity,
-          'variant': variant,
+          if (_isValidObjectId(variantId)) 'variantId': variantId,
         },
       );
 
@@ -134,11 +192,24 @@ class CartProvider extends ChangeNotifier {
       return;
     }
 
-    final stock = product.quantity ?? 0;
+    final selectedVariant =
+        _findVariantById(product, cartItem.variantId.isEmpty ? null : cartItem.variantId);
+    final hasVariants = (product.variants ?? const <ProductVariant>[]).isNotEmpty;
+    final stock = selectedVariant?.quantity ?? product.quantity ?? 0;
     final newQuantity = cartItem.quantity + quantityChange;
 
     if (newQuantity < 1) {
       SnackBarHelper.showErrorSnackBar('The minimum quantity is 1.');
+      return;
+    }
+
+    if (hasVariants && selectedVariant?.sId == null) {
+      SnackBarHelper.showErrorSnackBar('This variant is no longer available');
+      return;
+    }
+
+    if (selectedVariant != null && !selectedVariant.isActive) {
+      SnackBarHelper.showErrorSnackBar('This variant is currently inactive');
       return;
     }
 
@@ -154,7 +225,7 @@ class CartProvider extends ChangeNotifier {
         endpointUrl: 'cart/items',
         itemData: {
           'productId': cartItem.productId,
-          'variant': cartItem.variant,
+          if (_isValidObjectId(cartItem.variantId)) 'variantId': cartItem.variantId,
           'quantity': newQuantity,
         },
       );
@@ -176,7 +247,7 @@ class CartProvider extends ChangeNotifier {
 
   Future<bool> removeCartItemById({
     required String productId,
-    required String variant,
+    required String variantId,
   }) async {
     if (!_isValidObjectId(productId)) {
       SnackBarHelper.showErrorSnackBar('Invalid product id');
@@ -188,7 +259,7 @@ class CartProvider extends ChangeNotifier {
         endpointUrl: 'cart/items',
         body: {
           'productId': productId,
-          'variant': variant,
+          if (_isValidObjectId(variantId)) 'variantId': variantId,
         },
       );
 
@@ -305,27 +376,54 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> submitOrder(BuildContext context) async {
+    if (isSubmittingOrder) return;
+    isSubmittingOrder = true;
+    notifyListeners();
+
+    try {
+    final hasProfile = await _userProvider.fetchCurrentUserProfile(showSnack: false);
+    if (!hasProfile) {
+      SnackBarHelper.showErrorSnackBar('Unable to load profile. Please try again.');
+      return;
+    }
+
+    final profileAddress = _userProvider.currentUser?.address;
+    if (!_isAddressComplete(profileAddress)) {
+      SnackBarHelper.showErrorSnackBar(
+        'Please update your address in Profile > My Addresses before checkout.',
+      );
+      return;
+    }
+
+    fillAddressFromCurrentUser();
+
     if (selectedPaymentOption == 'cod') {
       await addOrder(context);
     } else {
-      await stripePayment(operation: () async {
-        await addOrder(context);
-      });
+      await stripePayment(
+        operation: () async {
+          await addOrder(context);
+        },
+      );
+    }
+    } finally {
+      isSubmittingOrder = false;
+      notifyListeners();
     }
   }
 
-  Future<void> addOrder(BuildContext context) async {
+  Future<bool> addOrder(BuildContext context) async {
     try {
       final currentUserId = _userProvider.getLoginUsr()?.sId;
       if (!_isValidObjectId(currentUserId)) {
         SnackBarHelper.showErrorSnackBar('Session expired, please login again');
-        return;
+        return false;
       }
 
-      final orderItems = cartItemToOrderItem(myCartItems, context);
+      final orderItems = cartItemToOrderItem(myCartItems);
       if (orderItems.isEmpty) {
         SnackBarHelper.showErrorSnackBar('Cart has invalid items, please refresh cart');
-        return;
+        return false;
       }
 
       final order = {
@@ -334,12 +432,12 @@ class CartProvider extends ChangeNotifier {
         'items': orderItems,
         'totalPrice': getCartSubTotal(),
         'shippingAddress': {
-          'phone': phoneController.text.trim(),
-          'street': streetController.text.trim(),
-          'city': cityController.text.trim(),
-          'state': stateController.text.trim(),
-          'postalCode': postalCodeController.text.trim(),
-          'country': countryController.text.trim(),
+          'phone': _userProvider.currentUser?.address?.phone ?? '',
+          'street': _userProvider.currentUser?.address?.street ?? '',
+          'city': _userProvider.currentUser?.address?.city ?? '',
+          'state': _userProvider.currentUser?.address?.state ?? '',
+          'postalCode': _userProvider.currentUser?.address?.postalCode ?? '',
+          'country': _userProvider.currentUser?.address?.country ?? '',
         },
         'paymentMethod': selectedPaymentOption,
         'orderTotal': {
@@ -363,40 +461,40 @@ class CartProvider extends ChangeNotifier {
             ? response.body['message']?.toString()
             : response.statusText;
         SnackBarHelper.showErrorSnackBar(message ?? 'Failed to add Order');
-        return;
+        return false;
       }
 
       final apiResponse = ApiResponse.fromJson(response.body, (json) => json);
       if (apiResponse.success == true) {
         SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        await context.dataProvider.getAllProducts();
+        if (!context.mounted) return true;
         clearCouponDiscount();
         await clearCartItems();
-        Navigator.pop(context);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+        return true;
       } else {
         SnackBarHelper.showErrorSnackBar('Failed to add Order: ${apiResponse.message}');
+        return false;
       }
     } catch (e) {
       log('Add order error: $e');
       SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      return false;
     }
   }
 
   List<Map<String, dynamic>> cartItemToOrderItem(
     List<CartItem> cartItems,
-    BuildContext context,
   ) {
     return cartItems.where((cartItem) => _isValidObjectId(cartItem.productId)).map((cartItem) {
-      final product = context.dataProvider.allProducts.firstWhere(
-        (p) => p.sId == cartItem.productId,
-        orElse: () => const Product(),
-      );
       return {
         'productID': cartItem.productId,
-        'productName': product.name ?? '',
         'quantity': cartItem.quantity,
         'price': cartItem.priceAtAdd,
         'variant': cartItem.variant,
+        if (_isValidObjectId(cartItem.variantId)) 'variantId': cartItem.variantId,
       };
     }).toList();
   }
@@ -419,7 +517,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> stripePayment({required Future<void> Function() operation}) async {
+  Future<bool> stripePayment({required Future<void> Function() operation}) async {
     try {
       final user = _userProvider.currentUser;
 
@@ -443,7 +541,7 @@ class CartProvider extends ChangeNotifier {
 
       if (!response.isOk) {
         SnackBarHelper.showErrorSnackBar('Payment initialization failed');
-        return;
+        return false;
       }
 
       final data = response.body['data'];
@@ -478,14 +576,13 @@ class CartProvider extends ChangeNotifier {
       );
 
       await Stripe.instance.presentPaymentSheet();
-      ScaffoldMessenger.of(Get.context!)
-          .showSnackBar(const SnackBar(content: Text('Payment Success')));
+      SnackBarHelper.showSuccessSnackBar('Payment Success');
       await operation();
+      return true;
     } catch (e) {
       log('Stripe Error: $e');
-      ScaffoldMessenger.of(Get.context!).showSnackBar(
-        const SnackBar(content: Text('Payment cancelled or error occurred')),
-      );
+      SnackBarHelper.showErrorSnackBar('Payment cancelled or error occurred');
+      return false;
     }
   }
 

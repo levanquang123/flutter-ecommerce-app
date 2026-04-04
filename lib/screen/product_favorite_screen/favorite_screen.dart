@@ -1,19 +1,27 @@
-import 'package:e_commerce_flutter/core/data/data_provider.dart';
-
-import '../../utility/extensions.dart';
 import 'provider/favorite_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../widget/product_grid_view.dart';
 import '../../utility/app_color.dart';
 
-class FavoriteScreen extends StatelessWidget {
+class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    Future.microtask(() => context.read<DataProvider>().getFavoriteProducts());
+  State<FavoriteScreen> createState() => _FavoriteScreenState();
+}
 
+class _FavoriteScreenState extends State<FavoriteScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<FavoriteProvider>().loadFavorites();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(

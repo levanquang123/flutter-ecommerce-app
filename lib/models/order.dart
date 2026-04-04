@@ -168,6 +168,10 @@ class Items {
   final int? quantity;
   final double? price;
   final String? variant;
+  final String? variantId;
+  final String? sku;
+  final String? image;
+  final List<OrderItemAttribute>? attributes;
   final String? sId;
 
   const Items({
@@ -176,6 +180,10 @@ class Items {
     this.quantity,
     this.price,
     this.variant,
+    this.variantId,
+    this.sku,
+    this.image,
+    this.attributes,
     this.sId,
   });
 
@@ -186,6 +194,12 @@ class Items {
       quantity: json['quantity'],
       price: (json['price'] as num?)?.toDouble(),
       variant: json['variant'],
+      variantId: json['variantId']?.toString(),
+      sku: json['sku']?.toString(),
+      image: json['image']?.toString(),
+      attributes: (json['attributes'] as List?)
+          ?.map((e) => OrderItemAttribute.fromJson(e as Map<String, dynamic>))
+          .toList(),
       sId: json['_id'],
     );
   }
@@ -197,7 +211,43 @@ class Items {
       'quantity': quantity,
       'price': price,
       'variant': variant,
+      'variantId': variantId,
+      'sku': sku,
+      'image': image,
+      'attributes': attributes?.map((e) => e.toJson()).toList(),
       '_id': sId,
+    };
+  }
+}
+
+class OrderItemAttribute {
+  final String? variantTypeId;
+  final String? variantTypeName;
+  final String? variantId;
+  final String? variantName;
+
+  const OrderItemAttribute({
+    this.variantTypeId,
+    this.variantTypeName,
+    this.variantId,
+    this.variantName,
+  });
+
+  factory OrderItemAttribute.fromJson(Map<String, dynamic> json) {
+    return OrderItemAttribute(
+      variantTypeId: json['variantTypeId']?.toString(),
+      variantTypeName: json['variantTypeName']?.toString(),
+      variantId: json['variantId']?.toString(),
+      variantName: json['variantName']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'variantTypeId': variantTypeId,
+      'variantTypeName': variantTypeName,
+      'variantId': variantId,
+      'variantName': variantName,
     };
   }
 }

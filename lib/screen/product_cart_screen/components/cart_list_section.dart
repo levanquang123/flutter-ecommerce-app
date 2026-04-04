@@ -25,11 +25,12 @@ class CartListSection extends StatelessWidget {
             orElse: () => const Product(),
           );
 
-          final productImage = product.images.safeElementAt(0)?.url ?? '';
+          final productImage =
+              cartItem.image.isNotEmpty ? cartItem.image : product.images.safeElementAt(0)?.url ?? '';
           final productName = product.name ?? 'Product';
 
           return Dismissible(
-            key: ValueKey('${cartItem.productId}_${cartItem.variant}_$index'),
+            key: ValueKey('${cartItem.productId}_${cartItem.variantId}_$index'),
             direction: DismissDirection.endToStart, // vuốt từ phải qua trái
             background: Container(
               margin: const EdgeInsets.all(15),
@@ -84,7 +85,7 @@ class CartListSection extends StatelessWidget {
             onDismissed: (_) async {
               await context.cartProvider.removeCartItemById(
                 productId: cartItem.productId,
-                variant: cartItem.variant,
+                variantId: cartItem.variantId,
               );
             },
             child: Container(

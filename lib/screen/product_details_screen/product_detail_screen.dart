@@ -1,23 +1,57 @@
 import 'package:e_commerce_flutter/utility/extensions.dart';
-
-import 'provider/product_detail_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../../widget/carousel_slider.dart';
 import '../../../../widget/page_wrapper.dart';
 import '../../models/product.dart';
-import '../../widget/horizontal_list.dart';
 import 'components/product_rating_section.dart';
+import 'provider/product_detail_provider.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen(this.product, {super.key});
 
   @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.proDetailProvider.clearSelection();
+    });
+  }
+
+  String _formatPrice(double value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
+  }
+
+  String _formatRange(List<double> values) {
+    if (values.isEmpty) return '0';
+    final sorted = [...values]..sort();
+    final min = sorted.first;
+    final max = sorted.last;
+    if (min == max) return _formatPrice(min);
+    return '${_formatPrice(min)} - ${_formatPrice(max)}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
+    final product = context.dataProvider.allProducts.firstWhere(
+      (item) => item.sId == widget.product.sId,
+      orElse: () => widget.product,
+    );
+    final height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+
     return SafeArea(
       child: Scaffold(
         extendBodyBehindAppBar: true,
@@ -31,125 +65,236 @@ class ProductDetailScreen extends StatelessWidget {
         ),
         body: SingleChildScrollView(
           child: PageWrapper(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: Consumer<ProductDetailProvider>(
+              builder: (context, detailProvider, child) {
+                final variantGroups = detailProvider.getVariantGroups(product);
+                final hasVariants = variantGroups.isNotEmpty;
+                final matchedVariants = detailProvider.getMatchingVariants(product);
+                final activeVariants = detailProvider.getActiveVariants(product);
+                final priceSource =
+                    matchedVariants.isNotEmpty ? matchedVariants : activeVariants;
+                final resolvedVariant = detailProvider.getResolvedVariant(product);
+                final displayImages = detailProvider.getDisplayImages(product);
 
-                Container(
-                  height: height * 0.48,
-                  width: width,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE5E6E8),
-                  ),
-                  child: Center(
-                    child: Container(
-                      height: width * 0.85,
-                      width: width * 0.85,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
+                final displayPrice = hasVariants
+                    ? (resolvedVariant != null
+                        ? _formatPrice(resolvedVariant.effectivePrice)
+                        : _formatRange(
+                            priceSource.map((item) => item.effectivePrice).toList(),
+                          ))
+                    : _formatPrice(product.offerPrice ?? product.price ?? 0);
+
+                final originalPriceText = hasVariants
+                    ? (resolvedVariant != null
+                        ? _formatPrice(
+                            resolvedVariant.price ?? resolvedVariant.effectivePrice,
                           )
-                        ],
+                        : _formatRange(
+                            priceSource
+                                .map((item) => item.price ?? item.effectivePrice)
+                                .toList(),
+                          ))
+                    : _formatPrice(product.price ?? (product.offerPrice ?? 0));
+
+                final hasDiscount = hasVariants
+                    ? priceSource.any(
+                        (item) => (item.price ?? item.effectivePrice) > item.effectivePrice,
+                      )
+                    : ((product.price ?? 0) > (product.offerPrice ?? product.price ?? 0));
+
+                final stock = hasVariants
+                    ? (resolvedVariant?.quantity ?? 0)
+                    : (product.quantity ?? 0);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: height * 0.48,
+                      width: width,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE5E6E8),
                       ),
-                      child: ClipOval(
-                        child: CarouselSlider(items: product.images ?? []),
+                      child: Center(
+                        child: Container(
+                          height: width * 0.85,
+                          width: width * 0.85,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: CarouselSlider(items: displayImages),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${product.name}',
-                        style: Theme.of(context).textTheme.displayMedium,
-                      ),
-                      const SizedBox(height: 10),
-                      const ProductRatingSection(),
-                      const SizedBox(height: 10),
-                      Row(
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            product.offerPrice != null
-                                ? "\$${product.offerPrice}"
-                                : "\$${product.price}",
-                            style: Theme.of(context).textTheme.displayLarge,
+                            '${product.name}',
+                            style: Theme.of(context).textTheme.displayMedium,
                           ),
-                          const SizedBox(width: 3),
-                          Visibility(
-                            visible: product.offerPrice != product.price,
-                            child: Text(
-                              "\$${product.price}",
-                              style: const TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
+                          const SizedBox(height: 10),
+                          const ProductRatingSection(),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Text(
+                                '\$$displayPrice',
+                                style: Theme.of(context).textTheme.displayLarge,
+                              ),
+                              const SizedBox(width: 6),
+                              if (hasDiscount)
+                                Text(
+                                  '\$$originalPriceText',
+                                  style: const TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              const Spacer(),
+                              Text(
+                                hasVariants && resolvedVariant == null
+                                    ? 'Select all options'
+                                    : stock > 0
+                                        ? 'Stock: $stock'
+                                        : 'Out of stock',
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          if (hasVariants)
+                            ...variantGroups.map((group) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      group.typeName,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: group.options.map((option) {
+                                        final isSelected = detailProvider.isOptionSelected(
+                                          group.typeId,
+                                          option.optionId,
+                                        );
+                                        final isAvailable = detailProvider.isOptionAvailable(
+                                          product: product,
+                                          typeId: group.typeId,
+                                          optionId: option.optionId,
+                                        );
+
+                                        return InkWell(
+                                          borderRadius: BorderRadius.circular(20),
+                                          onTap: isAvailable
+                                              ? () {
+                                                  detailProvider.selectOption(
+                                                    typeId: group.typeId,
+                                                    optionId: option.optionId,
+                                                  );
+                                                }
+                                              : null,
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 200),
+                                              curve: Curves.easeInOut,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 8,
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 70,
+                                                minHeight: 36,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: isSelected
+                                                    ? const Color(0xFFEC6813).withOpacity(0.1)
+                                                    : Colors.white,
+                                                borderRadius: BorderRadius.circular(16),
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? const Color(0xFFEC6813)
+                                                      : Colors.grey.shade300,
+                                                  width: isSelected ? 1.5 : 1,
+                                                ),
+                                                boxShadow: isSelected
+                                                    ? [
+                                                  BoxShadow(
+                                                    color: const Color(0xFFEC6813).withOpacity(0.25),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ]
+                                                    : [],
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    option.optionName,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                                      color: isAvailable
+                                                          ? (isSelected ? const Color(0xFFEC6813) : Colors.black87)
+                                                          : Colors.grey,
+                                                    ),
+                                                  ),
+
+                                                ],
+                                              ),
+                                            ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          Text(
+                            'About',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const SizedBox(height: 10),
+                          Text('${product.description}'),
+                          const SizedBox(height: 40),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => detailProvider.addToCart(product, context),
+                              child: const Text(
+                                'Add to cart',
+                                style: TextStyle(color: Colors.white),
                               ),
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            product.quantity != 0
-                                ? "Available stock : ${product.quantity}"
-                                : "Not available",
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          )
                         ],
                       ),
-                      const SizedBox(height: 30),
-                      product.proVariantId!.isNotEmpty
-                          ? Text(
-                        'Available ${product.proVariantTypeId?.type}',
-                        style: const TextStyle(
-                            color: Colors.red, fontSize: 16),
-                      )
-                          : const SizedBox(),
-                      Consumer<ProductDetailProvider>(
-                        builder: (context, proDetailProvider, child) {
-                          return HorizontalList(
-                            items: product.proVariantId ?? [],
-                            itemToString: (val) => val,
-                            selected: proDetailProvider.selectedVariant,
-                            onSelect: (val) {
-                              proDetailProvider.selectedVariant = val;
-                              proDetailProvider.updateUI();
-                            },
-                          );
-                        },
-                      ),
-                      //? product description
-                      Text(
-                        "About",
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 10),
-                      Text("${product.description}"),
-                      const SizedBox(height: 40),
-                      //? add to cart button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: product.quantity != 0
-                              ? () {
-                            context.proDetailProvider.addToCart(product, context);
-                          }
-                              : null,
-                          child: const Text("Add to cart",
-                              style: TextStyle(color: Colors.white)),
-                        ),
-                      )
-                    ],
-                  ),
-                )
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

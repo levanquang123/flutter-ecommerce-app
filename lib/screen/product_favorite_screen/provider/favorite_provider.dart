@@ -10,7 +10,7 @@ class FavoriteProvider extends ChangeNotifier {
   List<Product> get favoriteProducts => _dataProvider.favoriteProducts;
 
   bool checkIsItemFavorite(String productId) {
-    return _dataProvider.user?.favorites?.contains(productId) ?? false;
+    return _dataProvider.user?.favorites?.any((p) => p.sId == productId) ?? false;
   }
 
   Future<void> updateToFavoriteList(String productId) async {

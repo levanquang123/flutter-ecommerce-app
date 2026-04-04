@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/data/data_provider.dart';
 import '../models/product.dart';
-import '../screen/product_favorite_screen/provider/favorite_provider.dart';
 import '../utility/extensions.dart';
 import '../utility/utility_extension.dart';
 import 'custom_network_image.dart';
@@ -19,8 +18,30 @@ class ProductGridTile extends StatelessWidget {
     required this.isPriceOff,
   });
 
+  String _formatPrice(double value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final variants = product.variants ?? const <ProductVariant>[];
+    final hasVariants = variants.isNotEmpty;
+    final activeVariants = variants.where((v) => v.isActive).toList();
+    final variantsForPrice = activeVariants.isNotEmpty ? activeVariants : variants;
+    final minBasePrice = variantsForPrice.isEmpty
+        ? 0.0
+        : variantsForPrice
+            .map((v) => v.price ?? v.effectivePrice)
+            .reduce((a, b) => a < b ? a : b);
+    final minOfferPrice = variantsForPrice
+        .map((v) => v.offerPrice)
+        .whereType<double>()
+        .fold<double>(double.infinity, (a, b) => a < b ? a : b);
+    final hasOffer = minOfferPrice != double.infinity && minOfferPrice < minBasePrice;
+
     double discountPercentage =
         context.dataProvider.calculateDiscountPercentage(product.price ?? 0, product.offerPrice ?? 0);
     return GridTile(
@@ -95,16 +116,22 @@ class ProductGridTile extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      product.offerPrice != 0 ? "\$${product.offerPrice}" : "\$${product.price}",
+                      hasVariants
+                          ? '\$${_formatPrice(hasOffer ? minOfferPrice : minBasePrice)}'
+                          : '\$${_formatPrice(product.offerPrice ?? product.price ?? 0)}',
                       style: Theme.of(context).textTheme.headlineMedium,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 3),
-                  if (product.offerPrice != null && product.offerPrice != product.price)
+                  if (hasVariants
+                      ? hasOffer
+                      : (product.offerPrice != null && product.offerPrice != product.price))
                     Flexible(
                       child: Text(
-                        "\$${product.price}",
+                        hasVariants
+                            ? '\$${_formatPrice(minBasePrice)}'
+                            : '\$${_formatPrice(product.price ?? 0)}',
                         style: const TextStyle(
                           decoration: TextDecoration.lineThrough,
                           color: Colors.grey,

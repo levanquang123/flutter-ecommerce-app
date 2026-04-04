@@ -22,12 +22,29 @@ class _CarouselSliderState extends State<CarouselSlider> {
   int newIndex = 0;
 
   @override
+  void didUpdateWidget(covariant CarouselSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldSignature = oldWidget.items.map((item) => item.url ?? '').join('|');
+    final newSignature = widget.items.map((item) => item.url ?? '').join('|');
+    if (oldSignature != newSignature || newIndex >= widget.items.length) {
+      setState(() => newIndex = 0);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.items.isEmpty) {
+      return const Center(
+        child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+      );
+    }
+
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
         Positioned.fill(
           child: PageView.builder(
+            key: ValueKey(widget.items.map((item) => item.url ?? '').join('|')),
             itemCount: widget.items.length,
             onPageChanged: (int currentIndex) {
               setState(() => newIndex = currentIndex);

@@ -1,5 +1,3 @@
-import 'dart:ui';
-import '../provider/cart_provider.dart';
 import '../../../utility/extensions.dart';
 import '../../../widget/compleate_order_button.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../widget/applay_coupon_btn.dart';
 import '../../../widget/custom_dropdown.dart';
 import '../../../widget/custom_text_field.dart';
+import '../provider/cart_provider.dart';
 
 void showCustomBottomSheet(BuildContext context) {
   context.cartProvider.clearCouponDiscount();
@@ -25,7 +24,7 @@ void showCustomBottomSheet(BuildContext context) {
               children: [
                 // Toggle Address Fields
                 ListTile(
-                  title: const Text('Enter Address'),
+                  title: const Text('Shipping Address (from Profile)'),
                   trailing: IconButton(
                     icon: Icon(context.cartProvider.isExpanded
                         ? Icons.arrow_drop_up
@@ -204,21 +203,17 @@ void showCustomBottomSheet(BuildContext context) {
                 Consumer<CartProvider>(
                   builder: (context, cartProvider, child) {
                     return CompleteOrderButton(
-                        labelText: 'Complete Order  \$${context.cartProvider.getGrandTotal()} ',
-                        onPressed: () {
+                        labelText: cartProvider.isSubmittingOrder
+                            ? 'Processing...'
+                            : 'Complete Order  \$${context.cartProvider.getGrandTotal()} ',
+                        onPressed: cartProvider.isSubmittingOrder
+                            ? null
+                            : () {
                           if (!cartProvider.isExpanded) {
                             cartProvider.isExpanded = true;
                             cartProvider.updateUI();
-                            return;
                           }
-                          // Check if the form is valid
-                          if (context.cartProvider.buyNowFormKey.currentState!
-                              .validate()) {
-                            context.cartProvider.buyNowFormKey.currentState!
-                                .save();
-                            cartProvider.submitOrder(context);
-                            return;
-                          }
+                          cartProvider.submitOrder(context);
                         });
                   },
                 )
