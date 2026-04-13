@@ -470,6 +470,7 @@ class CartProvider extends ChangeNotifier {
         if (!context.mounted) return true;
         clearCouponDiscount();
         await clearCartItems();
+        await context.dataProvider.getAllProducts();
         if (context.mounted) {
           Navigator.pop(context);
         }

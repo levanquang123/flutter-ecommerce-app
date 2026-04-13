@@ -8,10 +8,10 @@ import '../../models/brand.dart';
 import '../../models/order.dart';
 import '../../models/poster.dart';
 import '../../models/product.dart';
+import '../../models/review.dart';
 import '../../models/sub_category.dart';
 import '../../models/user.dart';
 import '../../services/http_services.dart';
-import '../../utility/constants.dart';
 import '../../utility/snack_bar_helper.dart';
 
 class DataProvider extends ChangeNotifier {
@@ -63,9 +63,11 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "categories");
       if (response.isOk) {
-        ApiResponse<List<Category>> apiResponse = ApiResponse<List<Category>>.fromJson(
+        ApiResponse<List<Category>> apiResponse =
+            ApiResponse<List<Category>>.fromJson(
           response.body,
-              (json) => (json as List).map((item) => Category.fromJson(item)).toList(),
+          (json) =>
+              (json as List).map((item) => Category.fromJson(item)).toList(),
         );
         _allCategories = apiResponse.data ?? [];
         _filteredCategories = List.from(_allCategories);
@@ -84,7 +86,8 @@ class DataProvider extends ChangeNotifier {
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
       _filteredCategories = _allCategories
-          .where((category) => (category.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .where((category) =>
+              (category.name ?? "").toLowerCase().contains(lowerKeyWord))
           .toList();
     }
     notifyListeners();
@@ -94,9 +97,11 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "SubCategories");
       if (response.isOk) {
-        ApiResponse<List<SubCategory>> apiResponse = ApiResponse<List<SubCategory>>.fromJson(
+        ApiResponse<List<SubCategory>> apiResponse =
+            ApiResponse<List<SubCategory>>.fromJson(
           response.body,
-              (json) => (json as List).map((item) => SubCategory.fromJson(item)).toList(),
+          (json) =>
+              (json as List).map((item) => SubCategory.fromJson(item)).toList(),
         );
         _allSubCategories = apiResponse.data ?? [];
         _filteredSubCategories = List.from(_allSubCategories);
@@ -115,7 +120,8 @@ class DataProvider extends ChangeNotifier {
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
       _filteredSubCategories = _allSubCategories
-          .where((subCategory) => (subCategory.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .where((subCategory) =>
+              (subCategory.name ?? "").toLowerCase().contains(lowerKeyWord))
           .toList();
     }
     notifyListeners();
@@ -125,9 +131,10 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "brands");
       if (response.isOk) {
-        ApiResponse<List<Brand>> apiResponse = ApiResponse<List<Brand>>.fromJson(
+        ApiResponse<List<Brand>> apiResponse =
+            ApiResponse<List<Brand>>.fromJson(
           response.body,
-              (json) => (json as List).map((item) => Brand.fromJson(item)).toList(),
+          (json) => (json as List).map((item) => Brand.fromJson(item)).toList(),
         );
         _allBrands = apiResponse.data ?? [];
         _filteredBrands = List.from(_allBrands);
@@ -146,7 +153,8 @@ class DataProvider extends ChangeNotifier {
     } else {
       final lowerKeyWord = keyWord.toLowerCase();
       _filteredBrands = _allBrands
-          .where((brand) => (brand.name ?? "").toLowerCase().contains(lowerKeyWord))
+          .where((brand) =>
+              (brand.name ?? "").toLowerCase().contains(lowerKeyWord))
           .toList();
     }
     notifyListeners();
@@ -156,9 +164,10 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: 'products');
       if (response.isOk) {
-        ApiResponse<List<Product>> apiResponse = ApiResponse<List<Product>>.fromJson(
+        ApiResponse<List<Product>> apiResponse =
+            ApiResponse<List<Product>>.fromJson(
           response.body,
-              (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
+          (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
         );
         _allProducts = apiResponse.data ?? [];
         _filteredProducts = List.from(_allProducts);
@@ -180,7 +189,9 @@ class DataProvider extends ChangeNotifier {
         final name = (product.name ?? '').toLowerCase();
         final category = (product.proCategoryId?.name ?? '').toLowerCase();
         final brand = (product.proBrandId?.name ?? '').toLowerCase();
-        return name.contains(lowerKeyword) || category.contains(lowerKeyword) || brand.contains(lowerKeyword);
+        return name.contains(lowerKeyword) ||
+            category.contains(lowerKeyword) ||
+            brand.contains(lowerKeyword);
       }).toList();
     }
     notifyListeners();
@@ -190,9 +201,11 @@ class DataProvider extends ChangeNotifier {
     try {
       Response response = await service.getItems(endpointUrl: "posters");
       if (response.isOk) {
-        ApiResponse<List<Poster>> apiResponse = ApiResponse<List<Poster>>.fromJson(
+        ApiResponse<List<Poster>> apiResponse =
+            ApiResponse<List<Poster>>.fromJson(
           response.body,
-              (json) => (json as List).map((item) => Poster.fromJson(item)).toList(),
+          (json) =>
+              (json as List).map((item) => Poster.fromJson(item)).toList(),
         );
         _allPosters = apiResponse.data ?? [];
         _filteredPosters = List.from(_allPosters);
@@ -205,22 +218,37 @@ class DataProvider extends ChangeNotifier {
     return _filteredPosters;
   }
 
-  Future<void> getAllOrderByUser(User? user, {bool showSnack = false}) async {
+  Future<bool> getAllOrderByUser(User? user, {bool showSnack = false}) async {
     try {
       final userId = user?.sId;
-      Response response = await service.getItems(endpointUrl: 'orders/orderByUserId/$userId');
+      if ((userId ?? '').isEmpty) {
+        _allOrders = [];
+        _filteredOrders = [];
+        notifyListeners();
+        return false;
+      }
+      Response response =
+          await service.getItems(endpointUrl: 'orders/orderByUserId/$userId');
       if (response.isOk) {
-        ApiResponse<List<Order>> apiResponse = ApiResponse<List<Order>>.fromJson(
+        ApiResponse<List<Order>> apiResponse =
+            ApiResponse<List<Order>>.fromJson(
           response.body,
-              (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
+          (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
         );
         _allOrders = apiResponse.data ?? [];
         _filteredOrders = List.from(_allOrders);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+        return true;
       }
+      if (showSnack) {
+        SnackBarHelper.showErrorSnackBar(
+            response.statusText ?? 'Load orders failed');
+      }
+      return false;
     } catch (e) {
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
+      return false;
     }
   }
 
@@ -233,10 +261,12 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<Product>> getFavoriteProducts({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: "users/favorites");
+      Response response =
+          await service.getItems(endpointUrl: "users/favorites");
       if (response.isOk && response.body != null) {
         final List<dynamic> favList = response.body['data'] ?? [];
-        _favoriteProducts = favList.map((item) => Product.fromJson(item)).toList();
+        _favoriteProducts =
+            favList.map((item) => Product.fromJson(item)).toList();
         if (user != null) {
           user!.favorites = List.from(_favoriteProducts);
         }
@@ -248,9 +278,83 @@ class DataProvider extends ChangeNotifier {
     return _favoriteProducts;
   }
 
+  Future<List<Review>> getProductReviews(String productId) async {
+    Response response =
+        await service.getItems(endpointUrl: 'reviews/product/$productId');
+    if (!response.isOk) {
+      throw Exception(
+          _extractMessage(response.body, fallback: 'Cannot load reviews'));
+    }
+
+    final List<dynamic> list = _extractList(response.body);
+    return list.whereType<Map<String, dynamic>>().map(Review.fromJson).toList();
+  }
+
+  Future<Review> createProductReview({
+    required String productId,
+    required String orderID,
+    required String orderItemID,
+    required int rating,
+    required String comment,
+  }) async {
+    Response response = await service.addItem(
+      endpointUrl: 'reviews/product/$productId',
+      itemData: {
+        'orderID': orderID,
+        'orderItemID': orderItemID,
+        'rating': rating,
+        'comment': comment,
+      },
+    );
+    if (!response.isOk) {
+      throw Exception(
+          _extractMessage(response.body, fallback: 'Cannot create review'));
+    }
+
+    final raw = _extractDataObject(response.body);
+    if (raw == null) {
+      throw Exception('Review payload is invalid');
+    }
+    return Review.fromJson(raw);
+  }
+
+  Future<Review> updateReview({
+    required String reviewId,
+    required int rating,
+    required String comment,
+  }) async {
+    Response response = await service.putItem(
+      endpointUrl: 'reviews/$reviewId',
+      itemData: {
+        'rating': rating,
+        'comment': comment,
+      },
+    );
+    if (!response.isOk) {
+      throw Exception(
+          _extractMessage(response.body, fallback: 'Cannot update review'));
+    }
+
+    final raw = _extractDataObject(response.body);
+    if (raw == null) {
+      throw Exception('Review payload is invalid');
+    }
+    return Review.fromJson(raw);
+  }
+
+  Future<void> deleteReview(String reviewId) async {
+    Response response =
+        await service.deleteItem(endpointUrl: 'reviews', itemId: reviewId);
+    if (!response.isOk) {
+      throw Exception(
+          _extractMessage(response.body, fallback: 'Cannot delete review'));
+    }
+  }
+
   Future<void> toggleFavoriteApi(String productId) async {
     try {
-      bool isCurrentlyFavorite = _favoriteProducts.any((p) => p.sId == productId);
+      bool isCurrentlyFavorite =
+          _favoriteProducts.any((p) => p.sId == productId);
       Response response = await service.addItem(
         endpointUrl: 'users/favorite',
         itemData: {'productId': productId},
@@ -263,10 +367,43 @@ class DataProvider extends ChangeNotifier {
         );
         notifyListeners();
       } else {
-        SnackBarHelper.showErrorSnackBar(response.statusText ?? "Update failed");
+        SnackBarHelper.showErrorSnackBar(
+            response.statusText ?? "Update failed");
       }
     } catch (e) {
       SnackBarHelper.showErrorSnackBar("Connection error: $e");
     }
+  }
+
+  static List<dynamic> _extractList(dynamic body) {
+    if (body is List) return body;
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is List) return data;
+      if (data is Map<String, dynamic> && data['reviews'] is List) {
+        return data['reviews'] as List;
+      }
+      if (body['reviews'] is List) return body['reviews'] as List;
+    }
+    return const <dynamic>[];
+  }
+
+  static Map<String, dynamic>? _extractDataObject(dynamic body) {
+    if (body is Map<String, dynamic>) {
+      if (body['data'] is Map<String, dynamic>) {
+        return body['data'] as Map<String, dynamic>;
+      }
+      if (body['review'] is Map<String, dynamic>) {
+        return body['review'] as Map<String, dynamic>;
+      }
+    }
+    return body is Map<String, dynamic> ? body : null;
+  }
+
+  static String _extractMessage(dynamic body, {required String fallback}) {
+    if (body is Map<String, dynamic> && body['message'] != null) {
+      return body['message'].toString();
+    }
+    return fallback;
   }
 }

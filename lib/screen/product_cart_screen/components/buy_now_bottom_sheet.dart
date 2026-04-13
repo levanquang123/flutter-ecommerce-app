@@ -23,18 +23,21 @@ void showCustomBottomSheet(BuildContext context) {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Toggle Address Fields
-                ListTile(
-                  title: const Text('Shipping Address (from Profile)'),
-                  trailing: IconButton(
-                    icon: Icon(context.cartProvider.isExpanded
-                        ? Icons.arrow_drop_up
-                        : Icons.arrow_drop_down),
-                    onPressed: () {
-                      context.cartProvider.isExpanded =
-                          !context.cartProvider.isExpanded;
-                      (context as Element).markNeedsBuild();
-                    },
-                  ),
+                Consumer<CartProvider>(
+                  builder: (context, cartProvider, child) {
+                    return ListTile(
+                      title: const Text('Shipping Address (from Profile)'),
+                      trailing: IconButton(
+                        icon: Icon(cartProvider.isExpanded
+                            ? Icons.arrow_drop_up
+                            : Icons.arrow_drop_down),
+                        onPressed: () {
+                          cartProvider.isExpanded = !cartProvider.isExpanded;
+                          cartProvider.updateUI();
+                        },
+                      ),
+                    );
+                  },
                 ),
 
                 Consumer<CartProvider>(
@@ -63,7 +66,7 @@ void showCustomBottomSheet(BuildContext context) {
                               labelText: 'Phone',
                               onSave: (value) {},
                               inputType: TextInputType.phone,
-                              controller: context.cartProvider.phoneController,
+                              controller: cartProvider.phoneController,
                               validator: (value) => value!.isEmpty
                                   ? 'Please enter a phone number'
                                   : null,
@@ -72,7 +75,7 @@ void showCustomBottomSheet(BuildContext context) {
                               height: 65,
                               labelText: 'Street',
                               onSave: (val) {},
-                              controller: context.cartProvider.streetController,
+                              controller: cartProvider.streetController,
                               validator: (value) => value!.isEmpty
                                   ? 'Please enter a street'
                                   : null,
@@ -81,7 +84,7 @@ void showCustomBottomSheet(BuildContext context) {
                               height: 65,
                               labelText: 'City',
                               onSave: (value) {},
-                              controller: context.cartProvider.cityController,
+                              controller: cartProvider.cityController,
                               validator: (value) =>
                                   value!.isEmpty ? 'Please enter a city' : null,
                             ),
@@ -89,7 +92,7 @@ void showCustomBottomSheet(BuildContext context) {
                               height: 65,
                               labelText: 'State',
                               onSave: (value) {},
-                              controller: context.cartProvider.stateController,
+                              controller: cartProvider.stateController,
                               validator: (value) => value!.isEmpty
                                   ? 'Please enter a state'
                                   : null,
@@ -102,8 +105,8 @@ void showCustomBottomSheet(BuildContext context) {
                                     labelText: 'Postal Code',
                                     onSave: (value) {},
                                     inputType: TextInputType.number,
-                                    controller: context
-                                        .cartProvider.postalCodeController,
+                                    controller:
+                                        cartProvider.postalCodeController,
                                     validator: (value) => value!.isEmpty
                                         ? 'Please enter a code'
                                         : null,
@@ -115,8 +118,7 @@ void showCustomBottomSheet(BuildContext context) {
                                     height: 65,
                                     labelText: 'Country',
                                     onSave: (value) {},
-                                    controller:
-                                        context.cartProvider.countryController,
+                                    controller: cartProvider.countryController,
                                     validator: (value) => value!.isEmpty
                                         ? 'Please enter a country'
                                         : null,
@@ -157,7 +159,7 @@ void showCustomBottomSheet(BuildContext context) {
                       ),
                     ),
                     ApplyCouponButton(onPressed: () {
-                     context.cartProvider.checkCoupon();
+                      context.cartProvider.checkCoupon();
                     })
                   ],
                 ),
@@ -176,7 +178,7 @@ void showCustomBottomSheet(BuildContext context) {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              'Total Amount             : \$${context.cartProvider.getCartSubTotal()}',
+                              'Total Amount             : \$${cartProvider.getCartSubTotal()}',
                               style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -188,7 +190,7 @@ void showCustomBottomSheet(BuildContext context) {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black)),
                           Text(
-                              'Grand Total            : \$${context.cartProvider.getGrandTotal()}',
+                              'Grand Total            : \$${cartProvider.getGrandTotal()}',
                               style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -205,16 +207,17 @@ void showCustomBottomSheet(BuildContext context) {
                     return CompleteOrderButton(
                         labelText: cartProvider.isSubmittingOrder
                             ? 'Processing...'
-                            : 'Complete Order  \$${context.cartProvider.getGrandTotal()} ',
+                            : 'Complete Order  \$${cartProvider.getGrandTotal()} ',
                         onPressed: cartProvider.isSubmittingOrder
                             ? null
                             : () {
-                          if (!cartProvider.isExpanded) {
-                            cartProvider.isExpanded = true;
-                            cartProvider.updateUI();
-                          }
-                          cartProvider.submitOrder(context);
-                        });
+                                if (!cartProvider.isExpanded) {
+                                  cartProvider.isExpanded = true;
+                                  cartProvider.updateUI();
+                                } else {
+                                  cartProvider.submitOrder(context);
+                                }
+                              });
                   },
                 )
               ],

@@ -1,3 +1,5 @@
+import 'product_review_summary.dart';
+
 class Product {
   final String? sId;
   final String? name;
@@ -15,6 +17,7 @@ class Product {
   final String? createdAt;
   final String? updatedAt;
   final int? iV;
+  final ProductReviewSummary reviewSummary;
 
   const Product({
     this.sId,
@@ -33,6 +36,7 @@ class Product {
     this.createdAt,
     this.updatedAt,
     this.iV,
+    this.reviewSummary = const ProductReviewSummary(),
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -71,6 +75,9 @@ class Product {
       createdAt: json['createdAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
       iV: json['__v'] is int ? json['__v'] : null,
+      reviewSummary: ProductReviewSummary.fromJson(
+        json['reviewSummary'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -92,6 +99,7 @@ class Product {
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       '__v': iV,
+      'reviewSummary': reviewSummary.toJson(),
     };
   }
 }
