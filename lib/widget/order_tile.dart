@@ -157,6 +157,7 @@ class _OrderItemRow extends StatelessWidget {
     final quantity = item.quantity ?? 0;
     final price = item.price ?? 0;
     final itemTotal = price * quantity;
+    final variantLabel = _variantLabel(item);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,6 +179,17 @@ class _OrderItemRow extends StatelessWidget {
                 item.productName ?? 'Product',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
+              if (variantLabel.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Variant: $variantLabel',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 'Qty: $quantity x \$${price.toStringAsFixed(2)}',
@@ -219,6 +231,24 @@ class _OrderItemRow extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _variantLabel(Items item) {
+    final variant = item.variant?.trim() ?? '';
+    if (variant.isNotEmpty) return variant;
+
+    final attributes = item.attributes ?? const <OrderItemAttribute>[];
+    return attributes
+        .map((attribute) {
+          final typeName = attribute.variantTypeName?.trim() ?? '';
+          final variantName = attribute.variantName?.trim() ?? '';
+          if (typeName.isEmpty && variantName.isEmpty) return '';
+          if (typeName.isEmpty) return variantName;
+          if (variantName.isEmpty) return typeName;
+          return '$typeName: $variantName';
+        })
+        .where((label) => label.isNotEmpty)
+        .join(', ');
   }
 }
 

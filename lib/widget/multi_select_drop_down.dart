@@ -21,6 +21,9 @@ class MultiSelectDropDown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final validSelectedItems =
+        selectedItems.where((item) => items.contains(item)).toList();
+
     return Card(
       child: Center(
         child: DropdownButtonHideUnderline(
@@ -40,11 +43,13 @@ class MultiSelectDropDown<T> extends StatelessWidget {
                 enabled: false,
                 child: StatefulBuilder(
                   builder: (context, menuSetState) {
-                    final isSelected = selectedItems.contains(item);
+                    final isSelected = validSelectedItems.contains(item);
                     return InkWell(
                       onTap: () {
-                        isSelected ? selectedItems.remove(item) : selectedItems.add(item);
-                        onSelectionChanged(selectedItems);
+                        isSelected
+                            ? validSelectedItems.remove(item)
+                            : validSelectedItems.add(item);
+                        onSelectionChanged(List<T>.from(validSelectedItems));
                         menuSetState(() {});
                       },
                       child: Container(
@@ -74,7 +79,7 @@ class MultiSelectDropDown<T> extends StatelessWidget {
               );
             }).toList(),
             // Use last selected item as the current value so if we've limited menu height, it scrolls to the last item.
-            value: selectedItems.isEmpty ? null : selectedItems.last,
+            value: validSelectedItems.isEmpty ? null : validSelectedItems.last,
             onChanged: (value) {},
             selectedItemBuilder: (context) {
               return items.map(
@@ -82,7 +87,7 @@ class MultiSelectDropDown<T> extends StatelessWidget {
                   return Container(
                     alignment: AlignmentDirectional.center,
                     child: Text(
-                      selectedItems.map(displayItem).join(', '),
+                      validSelectedItems.map(displayItem).join(', '),
                       style: const TextStyle(
                         fontSize: 14,
                         overflow: TextOverflow.ellipsis,
