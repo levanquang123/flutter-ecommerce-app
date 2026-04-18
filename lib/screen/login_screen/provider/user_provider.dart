@@ -32,14 +32,18 @@ class UserProvider extends ChangeNotifier {
         'password': data.password,
       };
 
-      final response =
-          await service.addItem(endpointUrl: 'users/login', itemData: loginData);
+      final response = await service.addItem(
+        endpointUrl: 'users/login',
+        itemData: loginData,
+        includeAuth: false,
+        allowRefreshOn401: false,
+      );
 
       if (!response.isOk) {
-        if (response.body is Map<String, dynamic>) {
-          return response.body['message']?.toString() ?? 'Unknown error';
-        }
-        return response.statusText ?? 'Server Error';
+        return HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to sign in. Please try again.',
+        );
       }
 
       final apiResponse = ApiResponse<User>.fromJson(
@@ -48,7 +52,12 @@ class UserProvider extends ChangeNotifier {
       );
 
       if (!apiResponse.success) {
-        return apiResponse.message;
+        return HttpService.parseApiMessage(
+          response.body,
+          fallback: apiResponse.message.isNotEmpty
+              ? apiResponse.message
+              : 'Unable to sign in. Please try again.',
+        );
       }
 
       await saveLoginInfo(apiResponse.data);
@@ -57,7 +66,10 @@ class UserProvider extends ChangeNotifier {
       SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       return null;
     } catch (e) {
-      return 'An error occurred: $e';
+      return HttpService.humanizeError(
+        e,
+        fallback: 'Unable to sign in right now. Please try again.',
+      );
     }
   }
 
@@ -71,13 +83,15 @@ class UserProvider extends ChangeNotifier {
       final response = await service.addItem(
         endpointUrl: 'users/register',
         itemData: signupData,
+        includeAuth: false,
+        allowRefreshOn401: false,
       );
 
       if (!response.isOk) {
-        if (response.body is Map<String, dynamic>) {
-          return response.body['message']?.toString() ?? 'Unknown error';
-        }
-        return response.statusText ?? 'Server Error';
+        return HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to create your account. Please try again.',
+        );
       }
 
       final apiResponse = ApiResponse<User>.fromJson(
@@ -89,20 +103,27 @@ class UserProvider extends ChangeNotifier {
         SnackBarHelper.showSuccessSnackBar(apiResponse.message);
         return null;
       }
-      return apiResponse.message;
+      return HttpService.parseApiMessage(
+        response.body,
+        fallback: apiResponse.message.isNotEmpty
+            ? apiResponse.message
+            : 'Unable to create your account. Please try again.',
+      );
     } catch (e) {
       log('Register Error: $e');
-      return 'An error occurred: $e';
+      return HttpService.humanizeError(
+        e,
+        fallback: 'Unable to create your account right now. Please try again.',
+      );
     }
   }
 
   Future<void> saveLoginInfo(User? loginUser) async {
     if (loginUser == null) return;
-
-    if (loginUser.accessToken != null && loginUser.accessToken!.isNotEmpty) {
-      await box.write(TOKEN, loginUser.accessToken);
-    }
-    await box.write(USER_INFO_BOX, loginUser.toJson());
+    await HttpService.persistAuthSession(loginUser);
+    _currentUser = loginUser;
+    _dataProvider.user = loginUser;
+    notifyListeners();
   }
 
   Future<bool> fetchCurrentUserProfile({bool showSnack = false}) async {
@@ -115,7 +136,7 @@ class UserProvider extends ChangeNotifier {
 
       _currentUser = user;
       _dataProvider.user = user;
-      await box.write(USER_INFO_BOX, user.toJson());
+      await HttpService.persistAuthSession(user);
       _dataProvider.notifyListeners();
       notifyListeners();
 
@@ -147,6 +168,13 @@ class UserProvider extends ChangeNotifier {
   }
 
   User? getLoginUsr() {
+    final token = box.read(TOKEN)?.toString();
+    if ((token ?? '').isEmpty) {
+      _currentUser = null;
+      _dataProvider.user = null;
+      return null;
+    }
+
     if (_currentUser != null) return _currentUser;
     final userJson = box.read(USER_INFO_BOX);
     if (userJson is! Map<String, dynamic> || userJson.isEmpty) return null;
@@ -154,19 +182,23 @@ class UserProvider extends ChangeNotifier {
     return _currentUser;
   }
 
-  void logOutUser() {
-    box.remove(USER_INFO_BOX);
-    box.remove(TOKEN);
-    box.remove(PHONE_KEY);
-    box.remove(STREET_KEY);
-    box.remove(CITY_KEY);
-    box.remove(STATE_KEY);
-    box.remove(POSTAL_CODE_KEY);
-    box.remove(COUNTRY_KEY);
+  Future<void> logOutUser() async {
+    final accessToken = box.read(TOKEN)?.toString();
+    if ((accessToken ?? '').isNotEmpty) {
+      try {
+        await service.addItem(
+          endpointUrl: 'users/logout',
+          itemData: const <String, dynamic>{},
+          includeAuth: true,
+          allowRefreshOn401: false,
+        );
+      } catch (_) {}
+    }
+
+    await HttpService.clearAuthSession();
 
     _currentUser = null;
     _dataProvider.user = null;
-    _dataProvider.favoriteProducts.clear();
     notifyListeners();
     Get.offAll(() => const LoginScreen());
   }

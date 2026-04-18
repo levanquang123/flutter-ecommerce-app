@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'core/data/data_provider.dart';
 import 'models/user.dart';
+import 'services/http_services.dart';
 import 'screen/home_screen.dart';
 import 'screen/login_screen/login_screen.dart';
 import 'screen/login_screen/provider/user_provider.dart';
@@ -28,6 +29,8 @@ Future<void> main() async {
   OneSignal.initialize(ONE_SIGNAL_APP_ID);
   OneSignal.Notifications.requestPermission(true);
 
+  final bool isAuthenticated = await HttpService.bootstrapSession();
+
   final box = GetStorage();
   final dynamic userRaw = box.read(USER_INFO_BOX);
   User? loginUser;
@@ -35,8 +38,9 @@ Future<void> main() async {
   if (userRaw != null && userRaw is Map<String, dynamic>) {
     loginUser = User.fromJson(userRaw);
   }
-
-  final bool isAuthenticated = loginUser?.sId != null && box.read(TOKEN) != null;
+  if (!isAuthenticated) {
+    loginUser = null;
+  }
 
   runApp(
     MultiProvider(

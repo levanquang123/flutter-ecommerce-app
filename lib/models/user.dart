@@ -11,6 +11,8 @@ class User {
   final Address? address;
   final String? accessToken;
   final String? refreshToken;
+  final String? tokenType;
+  final String? accessTokenExpiresIn;
   final String? createdAt;
   final String? updatedAt;
   final int? iV;
@@ -25,6 +27,8 @@ class User {
     this.address,
     this.accessToken,
     this.refreshToken,
+    this.tokenType,
+    this.accessTokenExpiresIn,
     this.createdAt,
     this.updatedAt,
     this.iV,
@@ -45,7 +49,7 @@ class User {
       googleId: userData['googleId']?.toString(),
       role: userData['role']?.toString(),
 
-      accessToken: (json['token'] ?? json['accessToken'] ?? userData['accessToken'] ?? userData['token'])?.toString(),
+      accessToken: (json['accessToken'] ?? json['token'] ?? userData['accessToken'] ?? userData['token'])?.toString(),
       address: userData['address'] is Map<String, dynamic>
           ? Address.fromJson(userData['address'])
           : null,
@@ -61,6 +65,8 @@ class User {
           : [],
 
       refreshToken: (json['refreshToken'] ?? userData['refreshToken'])?.toString(),
+      tokenType: (json['tokenType'] ?? userData['tokenType'])?.toString(),
+      accessTokenExpiresIn: (json['accessTokenExpiresIn'] ?? userData['accessTokenExpiresIn'])?.toString(),
       createdAt: userData['createdAt']?.toString(),
       updatedAt: userData['updatedAt']?.toString(),
       iV: userData['__v'] is int ? userData['__v'] : null,
@@ -75,8 +81,11 @@ class User {
       'favorites': favorites?.map((e) => e.toJson()).toList() ?? [],
       'role': role,
       'address': address?.toJson(),
+      'token': accessToken,
       'accessToken': accessToken,
       'refreshToken': refreshToken,
+      'tokenType': tokenType,
+      'accessTokenExpiresIn': accessTokenExpiresIn,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       '__v': iV,

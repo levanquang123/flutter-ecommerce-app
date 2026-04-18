@@ -243,11 +243,22 @@ class DataProvider extends ChangeNotifier {
       }
       if (showSnack) {
         SnackBarHelper.showErrorSnackBar(
-            response.statusText ?? 'Load orders failed');
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to load your orders.',
+          ),
+        );
       }
       return false;
     } catch (e) {
-      if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
+      if (showSnack) {
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.humanizeError(
+            e,
+            fallback: 'Unable to load your orders right now.',
+          ),
+        );
+      }
       return false;
     }
   }
@@ -278,16 +289,35 @@ class DataProvider extends ChangeNotifier {
     return _favoriteProducts;
   }
 
-  Future<List<Review>> getProductReviews(String productId) async {
-    Response response =
-        await service.getItems(endpointUrl: 'reviews/product/$productId');
+  Future<ReviewQueryResult> getProductReviews(
+    String productId, {
+    int? rating,
+    String sort = 'newest',
+  }) async {
+    final query = <String>[];
+    if (rating != null && rating >= 1 && rating <= 5) {
+      query.add('rating=$rating');
+    }
+    final normalizedSort = sort.toLowerCase() == 'oldest' ? 'oldest' : 'newest';
+    query.add('sort=$normalizedSort');
+    final endpoint = query.isEmpty
+        ? 'reviews/product/$productId'
+        : 'reviews/product/$productId?${query.join('&')}';
+
+    Response response = await service.getItems(endpointUrl: endpoint);
     if (!response.isOk) {
       throw Exception(
           _extractMessage(response.body, fallback: 'Cannot load reviews'));
     }
 
+    if (response.body is Map<String, dynamic>) {
+      return ReviewQueryResult.fromJson(response.body as Map<String, dynamic>);
+    }
+
     final List<dynamic> list = _extractList(response.body);
-    return list.whereType<Map<String, dynamic>>().map(Review.fromJson).toList();
+    final reviews =
+        list.whereType<Map<String, dynamic>>().map(Review.fromJson).toList();
+    return ReviewQueryResult(reviews: reviews);
   }
 
   Future<Review> createProductReview({
@@ -368,10 +398,19 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
       } else {
         SnackBarHelper.showErrorSnackBar(
-            response.statusText ?? "Update failed");
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to update your favorite list.',
+          ),
+        );
       }
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar("Connection error: $e");
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to update your favorite list right now.',
+        ),
+      );
     }
   }
 
@@ -401,9 +440,6 @@ class DataProvider extends ChangeNotifier {
   }
 
   static String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map<String, dynamic> && body['message'] != null) {
-      return body['message'].toString();
-    }
-    return fallback;
+    return HttpService.parseApiMessage(body, fallback: fallback);
   }
 }

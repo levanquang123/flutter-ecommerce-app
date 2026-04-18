@@ -68,10 +68,12 @@ class ProfileProvider extends ChangeNotifier {
       );
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Update address failed');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to update address. Please try again.',
+          ),
+        );
         return false;
       }
 
@@ -80,7 +82,12 @@ class ProfileProvider extends ChangeNotifier {
       SnackBarHelper.showSuccessSnackBar('Address updated successfully');
       return true;
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to update address right now. Please try again.',
+        ),
+      );
       return false;
     }
   }

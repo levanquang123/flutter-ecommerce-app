@@ -160,10 +160,12 @@ class CartProvider extends ChangeNotifier {
       );
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Failed to add cart item');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to add this item to your cart.',
+          ),
+        );
         return false;
       }
 
@@ -172,7 +174,12 @@ class CartProvider extends ChangeNotifier {
       SnackBarHelper.showSuccessSnackBar('Item added to cart');
       return true;
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to add this item to your cart right now.',
+        ),
+      );
       return false;
     }
   }
@@ -231,17 +238,24 @@ class CartProvider extends ChangeNotifier {
       );
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Failed to update cart item');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to update cart quantity.',
+          ),
+        );
         return;
       }
 
       _cart = _extractCartFromResponse(response.body);
       notifyListeners();
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to update cart quantity right now.',
+        ),
+      );
     }
   }
 
@@ -264,10 +278,12 @@ class CartProvider extends ChangeNotifier {
       );
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Failed to remove cart item');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to remove this item from your cart.',
+          ),
+        );
         return false;
       }
 
@@ -276,7 +292,12 @@ class CartProvider extends ChangeNotifier {
       SnackBarHelper.showSuccessSnackBar('Item removed from cart');
       return true;
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to remove this item from your cart right now.',
+        ),
+      );
       return false;
     }
   }
@@ -289,17 +310,24 @@ class CartProvider extends ChangeNotifier {
       );
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Failed to clear cart');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to clear your cart.',
+          ),
+        );
         return;
       }
 
       _cart = const Cart(items: []);
       notifyListeners();
     } catch (e) {
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to clear your cart right now.',
+        ),
+      );
     }
   }
 
@@ -359,10 +387,17 @@ class CartProvider extends ChangeNotifier {
       final message = response.body is Map<String, dynamic>
           ? response.body['message']?.toString()
           : response.statusText;
-      SnackBarHelper.showErrorSnackBar(message ?? 'Error checking coupon');
+      SnackBarHelper.showErrorSnackBar(
+        message ?? 'Unable to validate this coupon code.',
+      );
     } catch (e) {
       log('Error checking coupon: $e');
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to validate this coupon code right now.',
+        ),
+      );
     }
   }
 
@@ -381,31 +416,33 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-    final hasProfile = await _userProvider.fetchCurrentUserProfile(showSnack: false);
-    if (!hasProfile) {
-      SnackBarHelper.showErrorSnackBar('Unable to load profile. Please try again.');
-      return;
-    }
+      final hasProfile = await _userProvider.fetchCurrentUserProfile(showSnack: false);
+      if (!hasProfile) {
+        SnackBarHelper.showErrorSnackBar(
+          'Unable to load your profile. Please sign in again.',
+        );
+        return;
+      }
 
-    final profileAddress = _userProvider.currentUser?.address;
-    if (!_isAddressComplete(profileAddress)) {
-      SnackBarHelper.showErrorSnackBar(
-        'Please update your address in Profile > My Addresses before checkout.',
-      );
-      return;
-    }
+      final profileAddress = _userProvider.currentUser?.address;
+      if (!_isAddressComplete(profileAddress)) {
+        SnackBarHelper.showErrorSnackBar(
+          'Please update your shipping address in Profile > My Addresses before checkout.',
+        );
+        return;
+      }
 
-    fillAddressFromCurrentUser();
+      fillAddressFromCurrentUser();
 
-    if (selectedPaymentOption == 'cod') {
-      await addOrder(context);
-    } else {
-      await stripePayment(
-        operation: () async {
-          await addOrder(context);
-        },
-      );
-    }
+      if (selectedPaymentOption == 'cod') {
+        await addOrder(context);
+      } else {
+        await stripePayment(
+          operation: () async {
+            await addOrder(context);
+          },
+        );
+      }
     } finally {
       isSubmittingOrder = false;
       notifyListeners();
@@ -416,7 +453,7 @@ class CartProvider extends ChangeNotifier {
     try {
       final currentUserId = _userProvider.getLoginUsr()?.sId;
       if (!_isValidObjectId(currentUserId)) {
-        SnackBarHelper.showErrorSnackBar('Session expired, please login again');
+        SnackBarHelper.showErrorSnackBar('Your session expired. Please log in again.');
         return false;
       }
 
@@ -457,10 +494,12 @@ class CartProvider extends ChangeNotifier {
       final response = await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (!response.isOk) {
-        final message = response.body is Map<String, dynamic>
-            ? response.body['message']?.toString()
-            : response.statusText;
-        SnackBarHelper.showErrorSnackBar(message ?? 'Failed to add Order');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to place your order. Please try again.',
+          ),
+        );
         return false;
       }
 
@@ -476,12 +515,24 @@ class CartProvider extends ChangeNotifier {
         }
         return true;
       } else {
-        SnackBarHelper.showErrorSnackBar('Failed to add Order: ${apiResponse.message}');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseApiMessage(
+            response.body,
+            fallback: apiResponse.message.isNotEmpty
+                ? apiResponse.message
+                : 'Unable to place your order. Please try again.',
+          ),
+        );
         return false;
       }
     } catch (e) {
       log('Add order error: $e');
-      SnackBarHelper.showErrorSnackBar('An error occurred: $e');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Unable to place your order right now. Please try again.',
+        ),
+      );
       return false;
     }
   }
@@ -541,7 +592,12 @@ class CartProvider extends ChangeNotifier {
           await service.addItem(endpointUrl: 'payment/stripe', itemData: paymentData);
 
       if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar('Payment initialization failed');
+        SnackBarHelper.showErrorSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Unable to initialize payment. Please try again.',
+          ),
+        );
         return false;
       }
 
@@ -582,7 +638,12 @@ class CartProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       log('Stripe Error: $e');
-      SnackBarHelper.showErrorSnackBar('Payment cancelled or error occurred');
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.humanizeError(
+          e,
+          fallback: 'Payment was cancelled or could not be completed.',
+        ),
+      );
       return false;
     }
   }

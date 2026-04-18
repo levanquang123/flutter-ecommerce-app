@@ -66,10 +66,8 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-              onPressed: () {
-                context.cartProvider.resetLocalState();
-                context.profileProvider.clearAddressForm();
-                context.userProvider.logOutUser();
+              onPressed: () async {
+                await context.userProvider.logOutUser();
               },
               child: const Text('Logout', style: TextStyle(fontSize: 18)),
             ),
