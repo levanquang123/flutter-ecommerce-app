@@ -437,11 +437,7 @@ class CartProvider extends ChangeNotifier {
       if (selectedPaymentOption == 'cod') {
         await addOrder(context);
       } else {
-        await stripePayment(
-          operation: () async {
-            await addOrder(context);
-          },
-        );
+        await stripePayment(context);
       }
     } finally {
       isSubmittingOrder = false;
@@ -451,8 +447,7 @@ class CartProvider extends ChangeNotifier {
 
   Future<bool> addOrder(BuildContext context) async {
     try {
-      final currentUserId = _userProvider.getLoginUsr()?.sId;
-      if (!_isValidObjectId(currentUserId)) {
+      if (!_isValidObjectId(_userProvider.getLoginUsr()?.sId)) {
         SnackBarHelper.showErrorSnackBar('Your session expired. Please log in again.');
         return false;
       }
@@ -464,10 +459,7 @@ class CartProvider extends ChangeNotifier {
       }
 
       final order = {
-        'userID': currentUserId,
-        'orderStatus': 'pending',
         'items': orderItems,
-        'totalPrice': getCartSubTotal(),
         'shippingAddress': {
           'phone': _userProvider.currentUser?.address?.phone ?? '',
           'street': _userProvider.currentUser?.address?.street ?? '',
@@ -477,18 +469,12 @@ class CartProvider extends ChangeNotifier {
           'country': _userProvider.currentUser?.address?.country ?? '',
         },
         'paymentMethod': selectedPaymentOption,
-        'orderTotal': {
-          'subtotal': getCartSubTotal(),
-          'discount': couponCodeDiscount,
-          'total': getGrandTotal(),
-        },
       };
       if (_isValidObjectId(couponApplied?.sId)) {
         order['couponCode'] = couponApplied!.sId!;
       }
 
-      log('Order payload ids: userID=$currentUserId, '
-          'items=${orderItems.map((e) => e['productID']).toList()}, '
+      log('Order payload ids: items=${orderItems.map((e) => e['productID']).toList()}, '
           'couponCode=${order['couponCode']}');
 
       final response = await service.addItem(endpointUrl: 'orders', itemData: order);
@@ -569,24 +555,37 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> stripePayment({required Future<void> Function() operation}) async {
+  Map<String, dynamic>? _buildCheckoutPayload() {
+    final orderItems = cartItemToOrderItem(myCartItems);
+    if (orderItems.isEmpty) {
+      SnackBarHelper.showErrorSnackBar('Cart has invalid items, please refresh cart');
+      return null;
+    }
+
+    final payload = {
+      'items': orderItems,
+      'shippingAddress': {
+        'phone': _userProvider.currentUser?.address?.phone ?? '',
+        'street': _userProvider.currentUser?.address?.street ?? '',
+        'city': _userProvider.currentUser?.address?.city ?? '',
+        'state': _userProvider.currentUser?.address?.state ?? '',
+        'postalCode': _userProvider.currentUser?.address?.postalCode ?? '',
+        'country': _userProvider.currentUser?.address?.country ?? '',
+      },
+    };
+
+    if (_isValidObjectId(couponApplied?.sId)) {
+      payload['couponCode'] = couponApplied!.sId!;
+    }
+
+    return payload;
+  }
+
+  Future<bool> stripePayment(BuildContext context) async {
     try {
       final user = _userProvider.currentUser;
-
-      final paymentData = {
-        'email': user?.email,
-        'name': user?.address?.fullName ?? user?.email,
-        'address': {
-          'line1': streetController.text,
-          'city': cityController.text,
-          'state': stateController.text,
-          'postal_code': postalCodeController.text,
-          'country': countryController.text.isEmpty ? 'US' : countryController.text,
-        },
-        'amount': (getGrandTotal() * 100).round(),
-        'currency': 'usd',
-        'description': 'Payment for order by ${user?.email}',
-      };
+      final paymentData = _buildCheckoutPayload();
+      if (paymentData == null) return false;
 
       final response =
           await service.addItem(endpointUrl: 'payment/stripe', itemData: paymentData);
@@ -634,7 +633,12 @@ class CartProvider extends ChangeNotifier {
 
       await Stripe.instance.presentPaymentSheet();
       SnackBarHelper.showSuccessSnackBar('Payment Success');
-      await operation();
+      clearCouponDiscount();
+      await clearCartItems();
+      await context.dataProvider.getAllProducts();
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
       return true;
     } catch (e) {
       log('Stripe Error: $e');

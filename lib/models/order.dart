@@ -7,6 +7,8 @@ class Order {
   final List<Items>? items;
   final double? totalPrice;
   final String? paymentMethod;
+  final String? paymentStatus;
+  final String? paymentIntentId;
   final CouponCode? couponCode;
   final String? trackingUrl;
   final String? orderDate;
@@ -21,6 +23,8 @@ class Order {
     this.items,
     this.totalPrice,
     this.paymentMethod,
+    this.paymentStatus,
+    this.paymentIntentId,
     this.couponCode,
     this.trackingUrl,
     this.orderDate,
@@ -43,6 +47,8 @@ class Order {
           .toList(),
       totalPrice: (json['totalPrice'] as num?)?.toDouble(),
       paymentMethod: json['paymentMethod'],
+      paymentStatus: json['paymentStatus']?.toString(),
+      paymentIntentId: json['paymentIntentId']?.toString(),
       couponCode: json['couponCode'] != null
           ? CouponCode.fromJson(json['couponCode'])
           : null,
@@ -62,6 +68,8 @@ class Order {
       'items': items?.map((v) => v.toJson()).toList(),
       'totalPrice': totalPrice,
       'paymentMethod': paymentMethod,
+      'paymentStatus': paymentStatus,
+      'paymentIntentId': paymentIntentId,
       'couponCode': couponCode?.toJson(),
       'trackingUrl': trackingUrl,
       'orderDate': orderDate,

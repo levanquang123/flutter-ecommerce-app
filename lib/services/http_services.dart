@@ -3,6 +3,8 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/user.dart';
 import '../screen/login_screen/login_screen.dart';
@@ -10,8 +12,25 @@ import '../utility/constants.dart';
 
 class HttpService extends GetConnect {
   static final GetStorage _box = GetStorage();
+  static const Uuid _uuid = Uuid();
+  static const String _clientType = 'mobile_client';
+  static const Set<String> _sensitiveKeys = {
+    'password',
+    'token',
+    'refreshtoken',
+    'authorization',
+    'cookie',
+    'card',
+    'cardnumber',
+    'cvv',
+    'cvc',
+    'exp',
+    'expiry',
+    'expiration',
+  };
   static Completer<bool>? _refreshCompleter;
   static bool _isRedirectingToLogin = false;
+  static String? _lastKnownRouteName;
 
   @override
   void onInit() {
@@ -31,6 +50,153 @@ class HttpService extends GetConnect {
       return {'Authorization': 'Bearer $token'};
     }
     return {};
+  }
+
+  static void setCurrentRouteName(String? routeName) {
+    final normalized = routeName?.trim();
+    if (normalized == null || normalized.isEmpty) return;
+    _lastKnownRouteName = normalized;
+  }
+
+  static Future<void> setSentryUser(User? user) async {
+    await Sentry.configureScope((scope) {
+      if (user == null) {
+        scope.setUser(null);
+        return;
+      }
+
+      scope.setUser(SentryUser(
+        id: user.sId,
+        email: user.email,
+        data: {
+          'role': user.role,
+        },
+      ));
+    });
+  }
+
+  Map<String, String> _buildTracingHeaders() {
+    final headers = <String, String>{};
+    final span = Sentry.getSpan();
+    if (span == null) return headers;
+
+    final sentryTrace = span.toSentryTrace();
+    headers[sentryTrace.name] = sentryTrace.value;
+
+    final baggage = span.toBaggageHeader();
+    if (baggage != null) {
+      headers[baggage.name] = baggage.value;
+    }
+
+    return headers;
+  }
+
+  Map<String, String> _buildRequestHeaders({
+    required bool includeAuth,
+    required String requestId,
+  }) {
+    return {
+      ..._getHeaders(includeAuth: includeAuth),
+      'x-client-type': _clientType,
+      'x-request-id': requestId,
+      ..._buildTracingHeaders(),
+    };
+  }
+
+  static bool _isSensitiveKey(String key) {
+    final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return _sensitiveKeys.any(normalized.contains);
+  }
+
+  static dynamic _scrub(dynamic value, {String? key}) {
+    if (key != null && _isSensitiveKey(key)) {
+      return '[Filtered]';
+    }
+
+    if (value is Map) {
+      final scrubbed = <String, dynamic>{};
+      value.forEach((k, v) {
+        final stringKey = k.toString();
+        scrubbed[stringKey] = _scrub(v, key: stringKey);
+      });
+      return scrubbed;
+    }
+
+    if (value is List) {
+      return value.map((item) => _scrub(item)).toList();
+    }
+
+    return value;
+  }
+
+  static String _currentRoute() {
+    final route = Get.currentRoute.trim();
+    if (route.isNotEmpty && route != '/') {
+      return route;
+    }
+    return _lastKnownRouteName ?? 'unknown';
+  }
+
+  bool _isCriticalEndpoint(String endpointUrl) {
+    final endpoint = _normalizeEndpoint(endpointUrl).toLowerCase();
+    return endpoint.contains('payment') ||
+        endpoint.contains('stripe') ||
+        endpoint.contains('order') ||
+        endpoint.contains('cart') ||
+        endpoint.contains('review') ||
+        endpoint == 'users/login' ||
+        endpoint == 'users/logout' ||
+        endpoint == 'users/refresh-token';
+  }
+
+  bool _shouldCaptureApiError(String endpointUrl, int statusCode) {
+    if (statusCode >= 500) return true;
+    if (statusCode == 401) return true;
+    return _isCriticalEndpoint(endpointUrl) && statusCode >= 400;
+  }
+
+  Future<void> _captureHttpException({
+    required String method,
+    required String endpointUrl,
+    required int? statusCode,
+    required String requestId,
+    dynamic requestBody,
+    Map<String, String>? headers,
+    dynamic responseBody,
+    Object? exception,
+    StackTrace? stackTrace,
+  }) async {
+    final endpoint = _normalizeEndpoint(endpointUrl);
+    final route = _currentRoute();
+    final scrubbedHeaders = _scrub(headers ?? <String, String>{});
+    final scrubbedRequest = _scrub(requestBody);
+    final scrubbedResponse = _scrub(responseBody);
+
+    await Sentry.captureException(
+      exception ?? Exception('HTTP ${method.toUpperCase()} $endpoint failed'),
+      stackTrace: stackTrace,
+      withScope: (scope) {
+        scope.level = SentryLevel.error;
+        scope.setTag('service', 'mobile-client');
+        scope.setTag('client_type', _clientType);
+        scope.setTag('endpoint', endpoint);
+        scope.setTag('method', method.toUpperCase());
+        scope.setTag('status_code', '${statusCode ?? 500}');
+        scope.setTag('request_id', requestId);
+        scope.setTag('route', route);
+        scope.setContexts('http_request', {
+          'endpoint': endpoint,
+          'method': method.toUpperCase(),
+          'status_code': statusCode,
+          'request_id': requestId,
+          'headers': scrubbedHeaders,
+          'payload': scrubbedRequest,
+        });
+        scope.setContexts('http_response', {
+          'body': scrubbedResponse,
+        });
+      },
+    );
   }
 
   String _buildUrl(String endpoint) {
@@ -69,7 +235,8 @@ class HttpService extends GetConnect {
         message = body['message'] as String;
       } else if (body['error'] is String) {
         message = body['error'] as String;
-      } else if (body['errors'] is List && (body['errors'] as List).isNotEmpty) {
+      } else if (body['errors'] is List &&
+          (body['errors'] as List).isNotEmpty) {
         message = (body['errors'] as List).first?.toString();
       } else if (body['data'] is Map<String, dynamic>) {
         final data = body['data'] as Map<String, dynamic>;
@@ -166,9 +333,13 @@ class HttpService extends GetConnect {
       favorites: user.favorites ?? storedUser?.favorites,
       role: user.role ?? storedUser?.role,
       address: user.address ?? storedUser?.address,
-      accessToken: user.accessToken ?? storedUser?.accessToken ?? _readString(TOKEN),
-      refreshToken: user.refreshToken ?? storedUser?.refreshToken ?? _readString(REFRESH_TOKEN),
-      tokenType: user.tokenType ?? storedUser?.tokenType ?? _readString(TOKEN_TYPE),
+      accessToken:
+          user.accessToken ?? storedUser?.accessToken ?? _readString(TOKEN),
+      refreshToken: user.refreshToken ??
+          storedUser?.refreshToken ??
+          _readString(REFRESH_TOKEN),
+      tokenType:
+          user.tokenType ?? storedUser?.tokenType ?? _readString(TOKEN_TYPE),
       accessTokenExpiresIn: user.accessTokenExpiresIn ??
           storedUser?.accessTokenExpiresIn ??
           _readString(ACCESS_TOKEN_EXPIRES_IN),
@@ -178,6 +349,7 @@ class HttpService extends GetConnect {
     );
 
     await _box.write(USER_INFO_BOX, mergedUser.toJson());
+    await setSentryUser(mergedUser);
   }
 
   static Future<void> clearAuthSession({bool clearAddress = false}) async {
@@ -195,9 +367,12 @@ class HttpService extends GetConnect {
       await _box.remove(POSTAL_CODE_KEY);
       await _box.remove(COUNTRY_KEY);
     }
+
+    await setSentryUser(null);
   }
 
-  static Future<void> handleSessionExpired({bool navigateToLogin = true}) async {
+  static Future<void> handleSessionExpired(
+      {bool navigateToLogin = true}) async {
     await clearAuthSession();
 
     if (!navigateToLogin || _isRedirectingToLogin) {
@@ -238,7 +413,8 @@ class HttpService extends GetConnect {
       }
 
       if (meResponse.statusCode == 401) {
-        final refreshed = await service._refreshTokenWithLock(navigateOnFail: false);
+        final refreshed =
+            await service._refreshTokenWithLock(navigateOnFail: false);
         if (!refreshed) return false;
 
         final retryToken = _readString(TOKEN);
@@ -328,8 +504,26 @@ class HttpService extends GetConnect {
       await handleSessionExpired(navigateToLogin: navigateOnFail);
       completer.complete(false);
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       log('[AUTH] refresh error: $e');
+      await Sentry.addBreadcrumb(
+        Breadcrumb(
+          type: 'auth',
+          category: 'auth.refresh_token',
+          level: SentryLevel.error,
+          message: 'Refresh token request failed',
+        ),
+      );
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.setTag('service', 'mobile-client');
+          scope.setTag('client_type', _clientType);
+          scope.setTag('endpoint', 'users/refresh-token');
+          scope.setTag('method', 'POST');
+        },
+      );
       await handleSessionExpired(navigateToLogin: navigateOnFail);
       completer.complete(false);
       return false;
@@ -340,34 +534,84 @@ class HttpService extends GetConnect {
 
   Future<Response<T>> _sendWithAuthRetry<T>({
     required String endpointUrl,
+    required String method,
+    dynamic requestBody,
     required Future<Response<T>> Function(Map<String, String> headers) send,
     bool includeAuth = true,
     bool allowRefreshOn401 = true,
   }) async {
-    final headers = _getHeaders(includeAuth: includeAuth);
-    final hadAccessToken = headers.containsKey('Authorization');
+    final requestId = _uuid.v4();
+    Map<String, String> currentHeaders = _buildRequestHeaders(
+      includeAuth: includeAuth,
+      requestId: requestId,
+    );
+    final hadAccessToken = currentHeaders.containsKey('Authorization');
 
-    Response<T> response = await send(headers);
+    try {
+      Response<T> response = await send(currentHeaders);
 
-    final shouldTryRefresh = allowRefreshOn401 &&
-        response.statusCode == 401 &&
-        includeAuth &&
-        hadAccessToken &&
-        !_isRefreshEndpoint(endpointUrl) &&
-        !_isAuthFreeEndpoint(endpointUrl);
+      final shouldTryRefresh = allowRefreshOn401 &&
+          response.statusCode == 401 &&
+          includeAuth &&
+          hadAccessToken &&
+          !_isRefreshEndpoint(endpointUrl) &&
+          !_isAuthFreeEndpoint(endpointUrl);
 
-    if (!shouldTryRefresh) {
+      if (shouldTryRefresh) {
+        await Sentry.addBreadcrumb(
+          Breadcrumb(
+            type: 'auth',
+            category: 'auth.retry_after_refresh',
+            level: SentryLevel.info,
+            message: 'Retrying request after 401 and refresh flow',
+            data: {
+              'request_id': requestId,
+              'endpoint': _normalizeEndpoint(endpointUrl),
+              'method': method.toUpperCase(),
+              'status_code': response.statusCode,
+            },
+          ),
+        );
+
+        final refreshed = await _refreshTokenWithLock(navigateOnFail: true);
+        if (refreshed) {
+          final retryHeaders = _buildRequestHeaders(
+            includeAuth: includeAuth,
+            requestId: requestId,
+          );
+          currentHeaders = retryHeaders;
+          response = await send(currentHeaders);
+        }
+      }
+
+      final statusCode = response.statusCode ?? 0;
+      if (statusCode >= 400 &&
+          _shouldCaptureApiError(endpointUrl, statusCode)) {
+        await _captureHttpException(
+          method: method,
+          endpointUrl: endpointUrl,
+          statusCode: response.statusCode,
+          requestId: requestId,
+          requestBody: requestBody,
+          headers: currentHeaders,
+          responseBody: response.body,
+        );
+      }
+
       return response;
+    } catch (e, stackTrace) {
+      await _captureHttpException(
+        method: method,
+        endpointUrl: endpointUrl,
+        statusCode: null,
+        requestId: requestId,
+        requestBody: requestBody,
+        headers: currentHeaders,
+        exception: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
-
-    final refreshed = await _refreshTokenWithLock(navigateOnFail: true);
-    if (!refreshed) {
-      return response;
-    }
-
-    final retryHeaders = _getHeaders(includeAuth: includeAuth);
-    response = await send(retryHeaders);
-    return response;
   }
 
   Future<Response> getItems({
@@ -378,6 +622,7 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: endpointUrl,
+        method: 'GET',
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
         send: (headers) => get(_buildUrl(endpointUrl), headers: headers),
@@ -398,9 +643,12 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: endpointUrl,
+        method: 'POST',
+        requestBody: itemData,
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
-        send: (headers) => post(_buildUrl(endpointUrl), itemData, headers: headers),
+        send: (headers) =>
+            post(_buildUrl(endpointUrl), itemData, headers: headers),
       );
       log('[POST] ${response.statusCode} => $endpointUrl');
       return response;
@@ -419,6 +667,8 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: '$endpointUrl/$itemId',
+        method: 'PUT',
+        requestBody: itemData,
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
         send: (headers) => put(
@@ -442,6 +692,8 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: endpointUrl,
+        method: 'PUT',
+        requestBody: itemData,
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
         send: (headers) => put(
@@ -466,6 +718,7 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: '$endpointUrl/$itemId',
+        method: 'DELETE',
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
         send: (headers) => delete(
@@ -488,6 +741,8 @@ class HttpService extends GetConnect {
     try {
       final response = await _sendWithAuthRetry(
         endpointUrl: endpointUrl,
+        method: 'DELETE',
+        requestBody: body,
         includeAuth: includeAuth,
         allowRefreshOn401: allowRefreshOn401,
         send: (headers) => request(

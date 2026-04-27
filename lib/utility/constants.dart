@@ -1,8 +1,7 @@
-// const MAIN_URL = 'http://192.168.1.6:3000';
-// const MAIN_URL = 'http://localhost:3000';
-
-const MAIN_URL = 'https://api.levanquang.com';
-//
+const MAIN_URL = String.fromEnvironment(
+  'MAIN_URL',
+  defaultValue: 'https://api.levanquang.com',
+);
 const USER_INFO_BOX = 'USER_INFO_BOX';
 
 const TOKEN = "TOKEN";
