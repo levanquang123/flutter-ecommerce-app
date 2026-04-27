@@ -4,6 +4,12 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace "com.sinasys.e_commerce_flutter"
     compileSdk 36
@@ -21,14 +27,28 @@ android {
     defaultConfig {
         applicationId "com.sinasys.e_commerce_flutter"
         minSdkVersion flutter.minSdkVersion
-        targetSdk 34
+        targetSdk 35
         versionCode flutter.versionCode
         versionName flutter.versionName
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            release {
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+                storeFile file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
 }

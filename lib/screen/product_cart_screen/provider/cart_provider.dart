@@ -18,6 +18,7 @@ class CartProvider extends ChangeNotifier {
 
   Cart? _cart;
   bool isLoading = false;
+  String? loadErrorMessage;
 
   final GlobalKey<FormState> buyNowFormKey = GlobalKey<FormState>();
   TextEditingController phoneController = TextEditingController();
@@ -73,16 +74,23 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> loadCart() async {
     isLoading = true;
+    loadErrorMessage = null;
     notifyListeners();
     try {
       final response = await service.getItems(endpointUrl: 'cart');
       if (response.isOk && response.body != null) {
         _cart = _extractCartFromResponse(response.body);
       } else {
-        _cart = const Cart(items: []);
+        loadErrorMessage = HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to load your cart.',
+        );
       }
-    } catch (_) {
-      _cart = const Cart(items: []);
+    } catch (e) {
+      loadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load your cart right now.',
+      );
     } finally {
       isLoading = false;
       notifyListeners();
@@ -95,7 +103,8 @@ class CartProvider extends ChangeNotifier {
     if (payload['data'] is Map<String, dynamic>) {
       payload = payload['data'];
     }
-    if (payload is Map<String, dynamic> && payload['cart'] is Map<String, dynamic>) {
+    if (payload is Map<String, dynamic> &&
+        payload['cart'] is Map<String, dynamic>) {
       payload = payload['cart'];
     }
     if (payload is Map<String, dynamic>) {
@@ -119,7 +128,8 @@ class CartProvider extends ChangeNotifier {
       return false;
     }
 
-    final hasVariants = (product.variants ?? const <ProductVariant>[]).isNotEmpty;
+    final hasVariants =
+        (product.variants ?? const <ProductVariant>[]).isNotEmpty;
     ProductVariant? selectedVariant;
 
     if (hasVariants) {
@@ -185,12 +195,12 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> updateCart(
-      CartItem cartItem,
-      int quantityChange,
-      BuildContext context,
-      ) async {
+    CartItem cartItem,
+    int quantityChange,
+    BuildContext context,
+  ) async {
     final product = context.dataProvider.allProducts.firstWhere(
-          (p) => p.sId == cartItem.productId,
+      (p) => p.sId == cartItem.productId,
       orElse: () => const Product(),
     );
 
@@ -199,9 +209,10 @@ class CartProvider extends ChangeNotifier {
       return;
     }
 
-    final selectedVariant =
-        _findVariantById(product, cartItem.variantId.isEmpty ? null : cartItem.variantId);
-    final hasVariants = (product.variants ?? const <ProductVariant>[]).isNotEmpty;
+    final selectedVariant = _findVariantById(
+        product, cartItem.variantId.isEmpty ? null : cartItem.variantId);
+    final hasVariants =
+        (product.variants ?? const <ProductVariant>[]).isNotEmpty;
     final stock = selectedVariant?.quantity ?? product.quantity ?? 0;
     final newQuantity = cartItem.quantity + quantityChange;
 
@@ -232,7 +243,8 @@ class CartProvider extends ChangeNotifier {
         endpointUrl: 'cart/items',
         itemData: {
           'productId': cartItem.productId,
-          if (_isValidObjectId(cartItem.variantId)) 'variantId': cartItem.variantId,
+          if (_isValidObjectId(cartItem.variantId))
+            'variantId': cartItem.variantId,
           'quantity': newQuantity,
         },
       );
@@ -349,12 +361,14 @@ class CartProvider extends ChangeNotifier {
         return;
       }
 
-      if (couponApplied != null && couponApplied?.couponCode == couponController.text) {
+      if (couponApplied != null &&
+          couponApplied?.couponCode == couponController.text) {
         SnackBarHelper.showErrorSnackBar('This coupon is already applied');
         return;
       }
 
-      final productIds = myCartItems.map((cartItem) => cartItem.productId).toList();
+      final productIds =
+          myCartItems.map((cartItem) => cartItem.productId).toList();
 
       final couponData = {
         'couponCode': couponController.text.trim(),
@@ -416,7 +430,8 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final hasProfile = await _userProvider.fetchCurrentUserProfile(showSnack: false);
+      final hasProfile =
+          await _userProvider.fetchCurrentUserProfile(showSnack: false);
       if (!hasProfile) {
         SnackBarHelper.showErrorSnackBar(
           'Unable to load your profile. Please sign in again.',
@@ -433,6 +448,7 @@ class CartProvider extends ChangeNotifier {
       }
 
       fillAddressFromCurrentUser();
+      if (!context.mounted) return;
 
       if (selectedPaymentOption == 'cod') {
         await addOrder(context);
@@ -448,13 +464,15 @@ class CartProvider extends ChangeNotifier {
   Future<bool> addOrder(BuildContext context) async {
     try {
       if (!_isValidObjectId(_userProvider.getLoginUsr()?.sId)) {
-        SnackBarHelper.showErrorSnackBar('Your session expired. Please log in again.');
+        SnackBarHelper.showErrorSnackBar(
+            'Your session expired. Please log in again.');
         return false;
       }
 
       final orderItems = cartItemToOrderItem(myCartItems);
       if (orderItems.isEmpty) {
-        SnackBarHelper.showErrorSnackBar('Cart has invalid items, please refresh cart');
+        SnackBarHelper.showErrorSnackBar(
+            'Cart has invalid items, please refresh cart');
         return false;
       }
 
@@ -477,7 +495,8 @@ class CartProvider extends ChangeNotifier {
       log('Order payload ids: items=${orderItems.map((e) => e['productID']).toList()}, '
           'couponCode=${order['couponCode']}');
 
-      final response = await service.addItem(endpointUrl: 'orders', itemData: order);
+      final response =
+          await service.addItem(endpointUrl: 'orders', itemData: order);
 
       if (!response.isOk) {
         SnackBarHelper.showErrorSnackBar(
@@ -493,9 +512,10 @@ class CartProvider extends ChangeNotifier {
       if (apiResponse.success == true) {
         SnackBarHelper.showSuccessSnackBar(apiResponse.message);
         if (!context.mounted) return true;
+        final dataProvider = context.dataProvider;
         clearCouponDiscount();
         await clearCartItems();
-        await context.dataProvider.getAllProducts();
+        await dataProvider.getAllProducts();
         if (context.mounted) {
           Navigator.pop(context);
         }
@@ -526,13 +546,16 @@ class CartProvider extends ChangeNotifier {
   List<Map<String, dynamic>> cartItemToOrderItem(
     List<CartItem> cartItems,
   ) {
-    return cartItems.where((cartItem) => _isValidObjectId(cartItem.productId)).map((cartItem) {
+    return cartItems
+        .where((cartItem) => _isValidObjectId(cartItem.productId))
+        .map((cartItem) {
       return {
         'productID': cartItem.productId,
         'quantity': cartItem.quantity,
         'price': cartItem.priceAtAdd,
         'variant': cartItem.variant,
-        if (_isValidObjectId(cartItem.variantId)) 'variantId': cartItem.variantId,
+        if (_isValidObjectId(cartItem.variantId))
+          'variantId': cartItem.variantId,
       };
     }).toList();
   }
@@ -558,7 +581,8 @@ class CartProvider extends ChangeNotifier {
   Map<String, dynamic>? _buildCheckoutPayload() {
     final orderItems = cartItemToOrderItem(myCartItems);
     if (orderItems.isEmpty) {
-      SnackBarHelper.showErrorSnackBar('Cart has invalid items, please refresh cart');
+      SnackBarHelper.showErrorSnackBar(
+          'Cart has invalid items, please refresh cart');
       return null;
     }
 
@@ -587,8 +611,8 @@ class CartProvider extends ChangeNotifier {
       final paymentData = _buildCheckoutPayload();
       if (paymentData == null) return false;
 
-      final response =
-          await service.addItem(endpointUrl: 'payment/stripe', itemData: paymentData);
+      final response = await service.addItem(
+          endpointUrl: 'payment/stripe', itemData: paymentData);
 
       if (!response.isOk) {
         SnackBarHelper.showErrorSnackBar(
@@ -620,7 +644,9 @@ class CartProvider extends ChangeNotifier {
             email: user?.email,
             name: user?.address?.fullName ?? user?.email,
             address: Address(
-              country: countryController.text.isEmpty ? 'US' : countryController.text,
+              country: countryController.text.isEmpty
+                  ? 'US'
+                  : countryController.text,
               city: cityController.text,
               line1: streetController.text,
               line2: stateController.text,
@@ -633,9 +659,11 @@ class CartProvider extends ChangeNotifier {
 
       await Stripe.instance.presentPaymentSheet();
       SnackBarHelper.showSuccessSnackBar('Payment Success');
+      if (!context.mounted) return true;
+      final dataProvider = context.dataProvider;
       clearCouponDiscount();
       await clearCartItems();
-      await context.dataProvider.getAllProducts();
+      await dataProvider.getAllProducts();
       if (context.mounted) {
         Navigator.pop(context);
       }

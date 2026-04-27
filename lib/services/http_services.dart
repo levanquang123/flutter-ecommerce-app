@@ -630,7 +630,7 @@ class HttpService extends GetConnect {
       log('[GET] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 
@@ -653,7 +653,7 @@ class HttpService extends GetConnect {
       log('[POST] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 
@@ -679,7 +679,7 @@ class HttpService extends GetConnect {
       );
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 
@@ -705,7 +705,7 @@ class HttpService extends GetConnect {
       log('[PUT] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 
@@ -728,7 +728,7 @@ class HttpService extends GetConnect {
       );
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 
@@ -755,7 +755,7 @@ class HttpService extends GetConnect {
       log('[DELETE] ${response.statusCode} => $endpointUrl');
       return response;
     } catch (e) {
-      return Response(body: {'message': e.toString()}, statusCode: 500);
+      return Response(body: {'message': humanizeError(e)}, statusCode: 500);
     }
   }
 }

@@ -8,9 +8,12 @@ class FavoriteProvider extends ChangeNotifier {
   FavoriteProvider(this._dataProvider);
 
   List<Product> get favoriteProducts => _dataProvider.favoriteProducts;
+  bool get isLoading => _dataProvider.isLoadingFavorites;
+  String? get loadErrorMessage => _dataProvider.favoriteLoadErrorMessage;
 
   bool checkIsItemFavorite(String productId) {
-    return _dataProvider.user?.favorites?.any((p) => p.sId == productId) ?? false;
+    return _dataProvider.user?.favorites?.any((p) => p.sId == productId) ??
+        false;
   }
 
   Future<void> updateToFavoriteList(String productId) async {

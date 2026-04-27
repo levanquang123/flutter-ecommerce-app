@@ -44,12 +44,22 @@ class DataProvider extends ChangeNotifier {
 
   List<Product> _favoriteProducts = [];
   List<Product> get favoriteProducts => _favoriteProducts;
+  String? favoriteLoadErrorMessage;
+  bool isLoadingFavorites = false;
 
   User? user;
+  bool isInitialLoading = false;
+  String? initialLoadErrorMessage;
+  String? _lastLoadErrorMessage;
 
   DataProvider();
 
   Future<void> initializeData() async {
+    isInitialLoading = true;
+    initialLoadErrorMessage = null;
+    _lastLoadErrorMessage = null;
+    notifyListeners();
+
     await Future.wait([
       getAllCategory(),
       getAllBrands(),
@@ -57,6 +67,17 @@ class DataProvider extends ChangeNotifier {
       getAllSubCategory(),
       getAllPosters(),
     ]);
+
+    isInitialLoading = false;
+    initialLoadErrorMessage = _lastLoadErrorMessage;
+    notifyListeners();
+  }
+
+  void _rememberLoadFailure(Response response, String fallback) {
+    _lastLoadErrorMessage = HttpService.parseResponseMessage(
+      response,
+      fallback: fallback,
+    );
   }
 
   Future<List<Category>> getAllCategory({bool showSnack = false}) async {
@@ -73,8 +94,14 @@ class DataProvider extends ChangeNotifier {
         _filteredCategories = List.from(_allCategories);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      } else {
+        _rememberLoadFailure(response, 'Unable to load categories.');
       }
     } catch (e) {
+      _lastLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load categories right now.',
+      );
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredCategories;
@@ -107,8 +134,14 @@ class DataProvider extends ChangeNotifier {
         _filteredSubCategories = List.from(_allSubCategories);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      } else {
+        _rememberLoadFailure(response, 'Unable to load sub categories.');
       }
     } catch (e) {
+      _lastLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load sub categories right now.',
+      );
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredSubCategories;
@@ -140,8 +173,14 @@ class DataProvider extends ChangeNotifier {
         _filteredBrands = List.from(_allBrands);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      } else {
+        _rememberLoadFailure(response, 'Unable to load brands.');
       }
     } catch (e) {
+      _lastLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load brands right now.',
+      );
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredBrands;
@@ -173,8 +212,14 @@ class DataProvider extends ChangeNotifier {
         _filteredProducts = List.from(_allProducts);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      } else {
+        _rememberLoadFailure(response, 'Unable to load products.');
       }
     } catch (e) {
+      _lastLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load products right now.',
+      );
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredProducts;
@@ -211,8 +256,14 @@ class DataProvider extends ChangeNotifier {
         _filteredPosters = List.from(_allPosters);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      } else {
+        _rememberLoadFailure(response, 'Unable to load posters.');
       }
     } catch (e) {
+      _lastLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load posters right now.',
+      );
       if (showSnack) SnackBarHelper.showErrorSnackBar(e.toString());
     }
     return _filteredPosters;
@@ -271,6 +322,9 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<List<Product>> getFavoriteProducts({bool showSnack = false}) async {
+    isLoadingFavorites = true;
+    favoriteLoadErrorMessage = null;
+    notifyListeners();
     try {
       Response response =
           await service.getItems(endpointUrl: "users/favorites");
@@ -282,9 +336,21 @@ class DataProvider extends ChangeNotifier {
           user!.favorites = List.from(_favoriteProducts);
         }
         notifyListeners();
+      } else {
+        favoriteLoadErrorMessage = HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to load your favorites.',
+        );
       }
     } catch (e) {
       log("Favorite Parsing Error: $e");
+      favoriteLoadErrorMessage = HttpService.humanizeError(
+        e,
+        fallback: 'Unable to load your favorites right now.',
+      );
+    } finally {
+      isLoadingFavorites = false;
+      notifyListeners();
     }
     return _favoriteProducts;
   }

@@ -30,6 +30,10 @@ class ProductListScreen extends StatelessWidget {
     onNavigateToTab?.call(index);
   }
 
+  Future<void> _retryInitialData(BuildContext context) async {
+    await context.read<DataProvider>().initializeData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,40 +50,89 @@ class ProductListScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Hello Sina",
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
-                Text(
-                  "Lets gets somethings?",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const PosterSection(),
-                Text(
-                  "Top categories",
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 5),
-                Consumer<DataProvider>(
-                  builder: (context, dataProvider, child) {
-                    return CategorySelector(
+            child: Consumer<DataProvider>(
+              builder: (context, dataProvider, child) {
+                final hasProducts = dataProvider.products.isNotEmpty;
+                if (dataProvider.isInitialLoading && !hasProducts) {
+                  return const SizedBox(
+                    height: 420,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (dataProvider.initialLoadErrorMessage != null &&
+                    !hasProducts) {
+                  return _InitialLoadError(
+                    message: dataProvider.initialLoadErrorMessage!,
+                    onRetry: () => _retryInitialData(context),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hello Sina",
+                      style: Theme.of(context).textTheme.displayLarge,
+                    ),
+                    Text(
+                      "Lets gets somethings?",
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const PosterSection(),
+                    Text(
+                      "Top categories",
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 5),
+                    CategorySelector(
                       categories: dataProvider.categories,
-                    );
-                  },
-                ),
-                Consumer<DataProvider>(
-                  builder: (context, dataProvider, child) {
-                    return ProductGridView(
+                    ),
+                    ProductGridView(
                       items: dataProvider.products,
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InitialLoadError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _InitialLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 420,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 48, color: AppColor.darkOrange),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
+          ],
         ),
       ),
     );

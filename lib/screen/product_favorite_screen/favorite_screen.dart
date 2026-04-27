@@ -38,6 +38,17 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
           builder: (context, dataProvider, child) {
             final items = dataProvider.favoriteProducts;
 
+            if (dataProvider.isLoading && items.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (dataProvider.loadErrorMessage != null && items.isEmpty) {
+              return _FavoriteLoadError(
+                message: dataProvider.loadErrorMessage!,
+                onRetry: dataProvider.loadFavorites,
+              );
+            }
+
             if (items.isEmpty) {
               return const Center(
                 child: Text("No favorites yet"),
@@ -48,6 +59,43 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               items: items,
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteLoadError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _FavoriteLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 48, color: AppColor.darkOrange),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
+          ],
         ),
       ),
     );

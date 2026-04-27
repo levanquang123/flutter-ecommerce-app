@@ -12,17 +12,29 @@ import 'package:provider/provider.dart';
 import '../../widget/horizontal_list.dart';
 import '../../widget/product_grid_view.dart';
 
-class ProductByCategoryScreen extends StatelessWidget {
+class ProductByCategoryScreen extends StatefulWidget {
   final Category selectedCategory;
 
   const ProductByCategoryScreen({super.key, required this.selectedCategory});
 
   @override
-  Widget build(BuildContext context) {
-    Future.delayed(Duration.zero, () {
+  State<ProductByCategoryScreen> createState() =>
+      _ProductByCategoryScreenState();
+}
+
+class _ProductByCategoryScreenState extends State<ProductByCategoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.proByCProvider
-          .filterInitialProductAndSubCategory(selectedCategory);
+          .filterInitialProductAndSubCategory(widget.selectedCategory);
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
@@ -31,7 +43,7 @@ class ProductByCategoryScreen extends StatelessWidget {
               floating: true,
               snap: true,
               title: Text(
-                "${selectedCategory.name}",
+                "${widget.selectedCategory.name}",
                 style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -79,9 +91,11 @@ class ProductByCategoryScreen extends StatelessWidget {
                                     items: const ['Low To High', 'High To Low'],
                                     onChanged: (val) {
                                       if (val?.toLowerCase() == 'low to high') {
-                                        context.proByCProvider.sortProducts(ascending: true);
+                                        context.proByCProvider
+                                            .sortProducts(ascending: true);
                                       } else {
-                                        context.proByCProvider.sortProducts(ascending: false);
+                                        context.proByCProvider
+                                            .sortProducts(ascending: false);
                                       }
                                     },
                                     displayItem: (val) => val,
