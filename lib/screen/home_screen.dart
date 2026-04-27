@@ -13,13 +13,6 @@ import '../core/data/data_provider.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const List<Widget> screens = [
-    ProductListScreen(),
-    FavoriteScreen(),
-    CartScreen(),
-    ProfileScreen()
-  ];
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -57,8 +50,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  void _changeTab(int index) {
+    setState(() => newIndex = index);
+    if (index == 0) {
+      _refreshHomeProducts();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      ProductListScreen(onNavigateToTab: _changeTab),
+      const FavoriteScreen(),
+      const CartScreen(),
+      const ProfileScreen(),
+    ];
+
     return PageWrapper(
       child: Scaffold(
         bottomNavigationBar: SafeArea(
@@ -78,10 +85,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               selectedIndex: newIndex,
               onTabChange: (currentIndex) {
-                setState(() => newIndex = currentIndex);
-                if (currentIndex == 0) {
-                  _refreshHomeProducts();
-                }
+                _changeTab(currentIndex);
               },
               tabs: AppData.bottomNavyBarItems.map((item) {
                 return GButton(
@@ -105,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: child,
             );
           },
-          child: HomeScreen.screens[newIndex],
+          child: screens[newIndex],
         ),
       ),
     );

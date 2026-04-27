@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../widget/app_bar_action_button.dart';
 import '../../../widget/custom_search_bar.dart';
 
-
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(100);
@@ -18,17 +17,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppBarActionButton(
-              icon: Icons.menu,
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
+            Builder(
+              builder: (context) {
+                return AppBarActionButton(
+                  icon: Icons.menu,
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                );
               },
             ),
             Expanded(
               child: CustomSearchBar(
                 controller: TextEditingController(),
                 onChanged: (val) {
-                 context.dataProvider.filterProducts(val);
+                  context.dataProvider.filterProducts(val);
                 },
               ),
             ),
