@@ -2,7 +2,6 @@ import 'product_cart_screen/cart_screen.dart';
 import 'product_favorite_screen/favorite_screen.dart';
 import 'product_list_screen/product_list_screen.dart';
 import 'profile_screen/profile_screen.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
@@ -62,15 +61,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return PageWrapper(
       child: Scaffold(
-        floatingActionButton: kDebugMode
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  throw StateError('This is test exception');
-                },
-                icon: const Icon(Icons.bug_report_outlined),
-                label: const Text('Verify Sentry Setup'),
-              )
-            : null,
         bottomNavigationBar: SafeArea(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
