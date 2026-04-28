@@ -76,6 +76,37 @@ class ProfileScreen extends StatelessWidget {
               child: const Text('Logout', style: TextStyle(fontSize: 18)),
             ),
           ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey,
+                textStyle: const TextStyle(fontSize: 14),
+              ),
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) {
+                    return AlertDialog(
+                      title: const Text('Delete Account'),
+                      content: const Text(
+                        'To delete your account, please send an email to levanquang27122005@gmail.com. We will process your request within 72 hours.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: const Text(
+                'Delete Account',
+              ),
+            ),
+          ),
         ],
       ),
     );
