@@ -30,7 +30,8 @@ class ProductGridTile extends StatelessWidget {
     final variants = product.variants ?? const <ProductVariant>[];
     final hasVariants = variants.isNotEmpty;
     final activeVariants = variants.where((v) => v.isActive).toList();
-    final variantsForPrice = activeVariants.isNotEmpty ? activeVariants : variants;
+    final variantsForPrice =
+        activeVariants.isNotEmpty ? activeVariants : variants;
     final minBasePrice = variantsForPrice.isEmpty
         ? 0.0
         : variantsForPrice
@@ -40,10 +41,12 @@ class ProductGridTile extends StatelessWidget {
         .map((v) => v.offerPrice)
         .whereType<double>()
         .fold<double>(double.infinity, (a, b) => a < b ? a : b);
-    final hasOffer = minOfferPrice != double.infinity && minOfferPrice < minBasePrice;
+    final hasOffer =
+        minOfferPrice != double.infinity && minOfferPrice < minBasePrice;
 
-    double discountPercentage =
-        context.dataProvider.calculateDiscountPercentage(product.price ?? 0, product.offerPrice ?? 0);
+    double discountPercentage = context.dataProvider
+        .calculateDiscountPercentage(
+            product.price ?? 0, product.offerPrice ?? 0);
     return GridTile(
       header: Padding(
         padding: const EdgeInsets.all(10.0),
@@ -68,7 +71,9 @@ class ProductGridTile extends StatelessWidget {
             ),
             Consumer<DataProvider>(
               builder: (context, dataProvider, child) {
-                bool isFavorite = dataProvider.user?.favorites?.any((p) => p.sId == product.sId) ?? false;
+                bool isFavorite = dataProvider.user?.favorites
+                        ?.any((p) => p.sId == product.sId) ??
+                    false;
 
                 return IconButton(
                   icon: Icon(
@@ -126,7 +131,8 @@ class ProductGridTile extends StatelessWidget {
                   const SizedBox(width: 3),
                   if (hasVariants
                       ? hasOffer
-                      : (product.offerPrice != null && product.offerPrice != product.price))
+                      : (product.offerPrice != null &&
+                          product.offerPrice != product.price))
                     Flexible(
                       child: Text(
                         hasVariants
@@ -142,19 +148,19 @@ class ProductGridTile extends StatelessWidget {
                     ),
                 ],
               )
-
             ],
           ),
         ),
       ),
       child: Container(
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE5E6E8),
-          borderRadius: BorderRadius.circular(20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E6E8),
         ),
         child: CustomNetworkImage(
-          imageUrl: product.images!.isNotEmpty ? product.images?.safeElementAt(0)?.url ?? '' : '',
+          imageUrl: product.images!.isNotEmpty
+              ? product.images?.safeElementAt(0)?.url ?? ''
+              : '',
           fit: BoxFit.scaleDown,
           scale: 3.0,
         ),

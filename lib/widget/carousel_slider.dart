@@ -24,7 +24,8 @@ class _CarouselSliderState extends State<CarouselSlider> {
   @override
   void didUpdateWidget(covariant CarouselSlider oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldSignature = oldWidget.items.map((item) => item.url ?? '').join('|');
+    final oldSignature =
+        oldWidget.items.map((item) => item.url ?? '').join('|');
     final newSignature = widget.items.map((item) => item.url ?? '').join('|');
     if (oldSignature != newSignature || newIndex >= widget.items.length) {
       setState(() => newIndex = 0);
@@ -50,8 +51,8 @@ class _CarouselSliderState extends State<CarouselSlider> {
               setState(() => newIndex = currentIndex);
             },
             itemBuilder: (_, index) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
+              return ColoredBox(
+                color: Colors.white,
                 child: CustomNetworkImage(
                   imageUrl: widget.items.safeElementAt(index)?.url ?? '',
                   fit: BoxFit.contain,

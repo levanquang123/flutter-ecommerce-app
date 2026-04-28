@@ -59,50 +59,50 @@ class _CartScreenState extends State<CartScreen> {
                 const EmptyCart()
               else
                 CartListSection(cartProducts: cartProvider.myCartItems),
-              Container(
-                margin: const EdgeInsets.only(bottom: 15),
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total',
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.w400),
-                    ),
-                    AnimatedSwitcherWrapper(
-                      child: Text(
-                        '\$${context.cartProvider.getCartSubTotal()}',
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFFEC6813),
-                        ),
+              if (hasItems) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.w400),
                       ),
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.only(left: 30, right: 30, bottom: 20),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(20)),
-                    onPressed: context.cartProvider.myCartItems.isEmpty
-                        ? null
-                        : () {
-                            showCustomBottomSheet(context);
-                          },
-                    child: const Text(
-                      'Buy Now',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                      AnimatedSwitcherWrapper(
+                        child: Text(
+                          '\$${context.cartProvider.getCartSubTotal()}',
+                          style: const TextStyle(
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFEC6813),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
-              )
+                SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 30, right: 30, bottom: 20),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(20)),
+                      onPressed: () {
+                        showCustomBottomSheet(context);
+                      },
+                      child: const Text(
+                        'Buy Now',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                )
+              ],
             ],
           );
         },

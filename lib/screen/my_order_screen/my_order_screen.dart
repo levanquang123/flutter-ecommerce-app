@@ -103,7 +103,7 @@ class _MyOrderScreenState extends State<MyOrderScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Không tải được đơn hàng.'),
+                  const Text('Unable to load your orders.'),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () {
@@ -113,7 +113,7 @@ class _MyOrderScreenState extends State<MyOrderScreen> {
                       });
                       _loadOrders();
                     },
-                    child: const Text('Thử lại'),
+                    child: const Text('Try again'),
                   ),
                 ],
               ),
@@ -126,7 +126,7 @@ class _MyOrderScreenState extends State<MyOrderScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Bạn chưa có đơn hàng nào.'),
+                  const Text('You do not have any orders yet.'),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () {
@@ -135,7 +135,7 @@ class _MyOrderScreenState extends State<MyOrderScreen> {
                       });
                       _loadOrders();
                     },
-                    child: const Text('Tải lại'),
+                    child: const Text('Refresh'),
                   ),
                 ],
               ),

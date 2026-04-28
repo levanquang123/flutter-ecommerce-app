@@ -34,8 +34,14 @@ class ProductListScreen extends StatelessWidget {
     await context.read<DataProvider>().initializeData();
   }
 
+  Future<void> _refreshCatalog(BuildContext context) async {
+    await context.read<DataProvider>().refreshHomeCatalog(force: true);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: const CustomAppBar(),
@@ -47,53 +53,63 @@ class ProductListScreen extends StatelessWidget {
         onProfileTap: () => _openTab(context, 3),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Consumer<DataProvider>(
-              builder: (context, dataProvider, child) {
-                final hasProducts = dataProvider.products.isNotEmpty;
-                if (dataProvider.isInitialLoading && !hasProducts) {
-                  return const SizedBox(
-                    height: 420,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
+        child: RefreshIndicator(
+          onRefresh: () => _refreshCatalog(context),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Consumer<DataProvider>(
+                builder: (context, dataProvider, child) {
+                  final hasProducts = dataProvider.products.isNotEmpty;
+                  final user = context.userProvider.getLoginUsr();
+                  final emailName = user?.email?.split('@').first.trim();
+                  final greetingName = (emailName == null || emailName.isEmpty)
+                      ? 'there'
+                      : emailName;
+                  if (dataProvider.isInitialLoading && !hasProducts) {
+                    return const SizedBox(
+                      height: 420,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
 
-                if (dataProvider.initialLoadErrorMessage != null &&
-                    !hasProducts) {
-                  return _InitialLoadError(
-                    message: dataProvider.initialLoadErrorMessage!,
-                    onRetry: () => _retryInitialData(context),
-                  );
-                }
+                  if (dataProvider.initialLoadErrorMessage != null &&
+                      !hasProducts) {
+                    return _InitialLoadError(
+                      height: viewportHeight * 0.66,
+                      message: dataProvider.initialLoadErrorMessage!,
+                      onRetry: () => _retryInitialData(context),
+                    );
+                  }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Hello Sina",
-                      style: Theme.of(context).textTheme.displayLarge,
-                    ),
-                    Text(
-                      "Lets gets somethings?",
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const PosterSection(),
-                    Text(
-                      "Top categories",
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 5),
-                    CategorySelector(
-                      categories: dataProvider.categories,
-                    ),
-                    ProductGridView(
-                      items: dataProvider.products,
-                    ),
-                  ],
-                );
-              },
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Hello $greetingName",
+                        style: Theme.of(context).textTheme.displayLarge,
+                      ),
+                      Text(
+                        "What are you looking for today?",
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const PosterSection(),
+                      Text(
+                        "Top categories",
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 5),
+                      CategorySelector(
+                        categories: dataProvider.categories,
+                      ),
+                      ProductGridView(
+                        items: dataProvider.products,
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -103,10 +119,12 @@ class ProductListScreen extends StatelessWidget {
 }
 
 class _InitialLoadError extends StatelessWidget {
+  final double height;
   final String message;
   final VoidCallback onRetry;
 
   const _InitialLoadError({
+    required this.height,
     required this.message,
     required this.onRetry,
   });
@@ -114,7 +132,7 @@ class _InitialLoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 420,
+      height: height,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

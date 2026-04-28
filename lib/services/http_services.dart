@@ -257,10 +257,11 @@ class HttpService extends GetConnect {
     Response response, {
     String fallback = 'Something went wrong. Please try again.',
   }) {
+    final statusText = response.statusText?.trim();
     return parseApiMessage(
       response.body,
-      fallback: response.statusText?.trim().isNotEmpty == true
-          ? response.statusText!.trim()
+      fallback: statusText?.isNotEmpty == true
+          ? humanizeError(statusText!, fallback: statusText)
           : fallback,
     );
   }
@@ -289,6 +290,14 @@ class HttpService extends GetConnect {
     String text = message.trim();
     if (text.isEmpty) {
       return 'Something went wrong. Please try again.';
+    }
+
+    final lower = text.toLowerCase();
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('no address associated with hostname') ||
+        lower.contains('network is unreachable')) {
+      return 'Network error. Please check your internet connection and try again.';
     }
 
     // Joi messages often include quoted keys: "email" must be a valid email.

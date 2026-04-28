@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../utility/app_data.dart';
 import '../../coming_soon_screen.dart';
+import '../../../widget/custom_network_image.dart';
 
 class PosterSection extends StatelessWidget {
   const PosterSection({super.key});
@@ -98,12 +99,9 @@ class PosterSection extends StatelessWidget {
                           flex: 4,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Image.network(
-                              imageUrl,
+                            child: CustomNetworkImage(
+                              imageUrl: imageUrl,
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image,
-                                      color: Colors.white),
                             ),
                           ),
                         )

@@ -47,7 +47,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
     return SafeArea(
@@ -122,32 +121,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      height: height * 0.48,
+                    SizedBox(
                       width: width,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE5E6E8),
-                      ),
-                      child: Center(
-                        child: Container(
-                          height: width * 0.85,
-                          width: width * 0.85,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: CarouselSlider(items: displayImages),
-                          ),
-                        ),
-                      ),
+                      height: width,
+                      child: CarouselSlider(items: displayImages),
                     ),
                     const SizedBox(height: 20),
                     Padding(

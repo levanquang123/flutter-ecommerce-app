@@ -51,6 +51,10 @@ class DataProvider extends ChangeNotifier {
   bool isInitialLoading = false;
   String? initialLoadErrorMessage;
   String? _lastLoadErrorMessage;
+  DateTime? _lastHomeCatalogRefreshAt;
+  Future<void>? _homeCatalogRefresh;
+
+  static const Duration _homeCatalogRefreshInterval = Duration(seconds: 45);
 
   DataProvider();
 
@@ -71,6 +75,37 @@ class DataProvider extends ChangeNotifier {
     isInitialLoading = false;
     initialLoadErrorMessage = _lastLoadErrorMessage;
     notifyListeners();
+  }
+
+  Future<void> refreshHomeCatalog({bool force = false}) {
+    final inFlight = _homeCatalogRefresh;
+    if (inFlight != null) return inFlight;
+
+    final now = DateTime.now();
+    final lastRefresh = _lastHomeCatalogRefreshAt;
+    if (!force &&
+        lastRefresh != null &&
+        now.difference(lastRefresh) < _homeCatalogRefreshInterval) {
+      return Future.value();
+    }
+
+    _lastLoadErrorMessage = null;
+    _homeCatalogRefresh = Future.wait([
+      getAllCategory(),
+      getAllBrands(),
+      getAllProducts(),
+      getAllSubCategory(),
+      getAllPosters(),
+    ]).then((_) {
+      initialLoadErrorMessage =
+          _allProducts.isNotEmpty ? null : _lastLoadErrorMessage;
+      notifyListeners();
+    }).whenComplete(() {
+      _lastHomeCatalogRefreshAt = DateTime.now();
+      _homeCatalogRefresh = null;
+    });
+
+    return _homeCatalogRefresh!;
   }
 
   void _rememberLoadFailure(Response response, String fallback) {

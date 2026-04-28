@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'product_cart_screen/cart_screen.dart';
 import 'product_favorite_screen/favorite_screen.dart';
 import 'product_list_screen/product_list_screen.dart';
@@ -19,16 +21,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int newIndex = 0;
-  bool _isRefreshingHomeProducts = false;
+  bool _isRefreshingHomeCatalog = false;
+  Timer? _homeCatalogRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshHomeCatalog(force: true);
+    });
+    _homeCatalogRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) {
+        if (newIndex == 0) {
+          _refreshHomeCatalog();
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _homeCatalogRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -36,24 +51,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && newIndex == 0) {
-      _refreshHomeProducts();
+      _refreshHomeCatalog(force: true);
     }
   }
 
-  Future<void> _refreshHomeProducts() async {
-    if (_isRefreshingHomeProducts) return;
-    _isRefreshingHomeProducts = true;
+  Future<void> _refreshHomeCatalog({bool force = false}) async {
+    if (_isRefreshingHomeCatalog || !mounted) return;
+    _isRefreshingHomeCatalog = true;
     try {
-      await context.read<DataProvider>().getAllProducts();
+      await context.read<DataProvider>().refreshHomeCatalog(force: force);
     } finally {
-      _isRefreshingHomeProducts = false;
+      _isRefreshingHomeCatalog = false;
     }
   }
 
   void _changeTab(int index) {
     setState(() => newIndex = index);
     if (index == 0) {
-      _refreshHomeProducts();
+      _refreshHomeCatalog(force: true);
     }
   }
 

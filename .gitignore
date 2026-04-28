@@ -43,7 +43,6 @@ local.properties
 **/ios/Flutter/ephemeral/ 
 
 # Web related
-lib/generated_plugin_registrant.dart
 
 # Symbolication/Obfuscation related
 app.*.symbols
