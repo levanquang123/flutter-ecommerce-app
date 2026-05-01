@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../utility/animation/animated_switcher_wrapper.dart';
 import '../../utility/app_color.dart';
+import '../../utility/currency_formatter.dart';
 import '../../utility/extensions.dart';
 import 'components/buy_now_bottom_sheet.dart';
 import 'components/cart_list_section.dart';
@@ -73,7 +74,7 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                       AnimatedSwitcherWrapper(
                         child: Text(
-                          '\$${context.cartProvider.getCartSubTotal()}',
+                          formatUsd(context.cartProvider.getCartSubTotal()),
                           style: const TextStyle(
                             fontSize: 25,
                             fontWeight: FontWeight.w900,

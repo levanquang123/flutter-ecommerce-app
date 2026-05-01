@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/order.dart';
 import '../utility/app_color.dart';
+import '../utility/currency_formatter.dart';
 import 'custom_network_image.dart';
 
 class OrderTile extends StatelessWidget {
@@ -90,7 +91,7 @@ class OrderTile extends StatelessWidget {
             }),
             const Divider(height: 24),
             _InfoLine(label: 'Subtotal', value: _currency(subtotal)),
-            _InfoLine(label: 'Discount', value: '-${_currency(discount)}'),
+            _InfoLine(label: 'Discount', value: _discountCurrency(discount)),
             _InfoLine(
               label: 'Purchased total',
               value: _currency(total),
@@ -114,7 +115,12 @@ class OrderTile extends StatelessWidget {
   }
 
   String _currency(double value) {
-    return '\$${value.toStringAsFixed(2)}';
+    return formatUsd(value);
+  }
+
+  String _discountCurrency(double value) {
+    if (value <= 0) return formatUsd(0);
+    return '-${formatUsd(value)}';
   }
 
   String _formatDate(String raw) {
@@ -192,11 +198,11 @@ class _OrderItemRow extends StatelessWidget {
               ],
               const SizedBox(height: 4),
               Text(
-                'Qty: $quantity x \$${price.toStringAsFixed(2)}',
+                'Qty: $quantity x ${formatUsd(price)}',
                 style: const TextStyle(color: Colors.black54),
               ),
               Text(
-                'Line total: \$${itemTotal.toStringAsFixed(2)}',
+                'Line total: ${formatUsd(itemTotal)}',
                 style: const TextStyle(fontSize: 12),
               ),
               if (showQuickReview) ...[

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../models/cart.dart';
 import '../../../models/product.dart';
 import '../../../utility/app_color.dart';
+import '../../../utility/currency_formatter.dart';
 import '../../../utility/utility_extension.dart';
 
 class CartListSection extends StatelessWidget {
@@ -15,8 +16,7 @@ class CartListSection extends StatelessWidget {
   });
 
   String _formatPrice(double value) {
-    if (value == value.toInt()) return value.toInt().toString();
-    return value.toStringAsFixed(2);
+    return formatUsd(value);
   }
 
   ProductVariant? _findVariant(Product product, String variantId) {
@@ -232,7 +232,7 @@ class CartListSection extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '\$${_formatPrice(cartItem.priceAtAdd)}',
+                                    _formatPrice(cartItem.priceAtAdd),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -246,7 +246,7 @@ class CartListSection extends StatelessWidget {
                                       children: [
                                         Flexible(
                                           child: Text(
-                                            '\$${_formatPrice(originalPrice)}',
+                                            _formatPrice(originalPrice),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(

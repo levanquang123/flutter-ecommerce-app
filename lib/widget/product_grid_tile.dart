@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/data/data_provider.dart';
 import '../models/product.dart';
+import '../utility/currency_formatter.dart';
 import '../utility/extensions.dart';
 import '../utility/utility_extension.dart';
 import 'custom_network_image.dart';
@@ -19,10 +20,7 @@ class ProductGridTile extends StatelessWidget {
   });
 
   String _formatPrice(double value) {
-    if (value == value.toInt()) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(2);
+    return formatUsd(value);
   }
 
   @override
@@ -122,8 +120,10 @@ class ProductGridTile extends StatelessWidget {
                   Flexible(
                     child: Text(
                       hasVariants
-                          ? '\$${_formatPrice(hasOffer ? minOfferPrice : minBasePrice)}'
-                          : '\$${_formatPrice(product.offerPrice ?? product.price ?? 0)}',
+                          ? _formatPrice(
+                              hasOffer ? minOfferPrice : minBasePrice)
+                          : _formatPrice(
+                              product.offerPrice ?? product.price ?? 0),
                       style: Theme.of(context).textTheme.headlineMedium,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -136,8 +136,8 @@ class ProductGridTile extends StatelessWidget {
                     Flexible(
                       child: Text(
                         hasVariants
-                            ? '\$${_formatPrice(minBasePrice)}'
-                            : '\$${_formatPrice(product.price ?? 0)}',
+                            ? _formatPrice(minBasePrice)
+                            : _formatPrice(product.price ?? 0),
                         style: const TextStyle(
                           decoration: TextDecoration.lineThrough,
                           color: Colors.grey,

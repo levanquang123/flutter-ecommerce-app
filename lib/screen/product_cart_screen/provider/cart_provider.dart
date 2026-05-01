@@ -351,7 +351,8 @@ class CartProvider extends ChangeNotifier {
   }
 
   double getGrandTotal() {
-    return getCartSubTotal() - couponCodeDiscount;
+    final total = getCartSubTotal() - couponCodeDiscount;
+    return total < 0 ? 0 : total;
   }
 
   Future<void> checkCoupon() async {
@@ -369,11 +370,13 @@ class CartProvider extends ChangeNotifier {
 
       final productIds =
           myCartItems.map((cartItem) => cartItem.productId).toList();
+      final items = cartItemToOrderItem(myCartItems);
 
       final couponData = {
         'couponCode': couponController.text.trim(),
         'purchaseAmount': getCartSubTotal(),
         'productIds': productIds,
+        'items': items,
       };
 
       final response = await service.addItem(
@@ -389,7 +392,8 @@ class CartProvider extends ChangeNotifier {
 
         if (apiResponse.success == true && apiResponse.data != null) {
           couponApplied = apiResponse.data;
-          couponCodeDiscount = getCouponDiscountAmount(apiResponse.data!);
+          couponCodeDiscount = _extractServerDiscount(response.body) ??
+              getCouponDiscountAmount(apiResponse.data!);
           notifyListeners();
           SnackBarHelper.showSuccessSnackBar(apiResponse.message);
           return;
@@ -415,13 +419,34 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  double getCouponDiscountAmount(Coupon coupon) {
-    final discountType = coupon.discountType ?? 'fixed';
-    if (discountType == 'fixed') {
-      return coupon.discountAmount ?? 0;
+  double? _extractServerDiscount(dynamic body) {
+    if (body is! Map<String, dynamic>) return null;
+    final data = body['data'];
+    if (data is! Map<String, dynamic>) return null;
+
+    final orderTotal = data['orderTotal'];
+    if (orderTotal is Map<String, dynamic> && orderTotal['discount'] is num) {
+      return (orderTotal['discount'] as num).toDouble();
     }
-    final discountPercentage = coupon.discountAmount ?? 0;
-    return getCartSubTotal() * (discountPercentage / 100);
+
+    if (data['calculatedDiscount'] is num) {
+      return (data['calculatedDiscount'] as num).toDouble();
+    }
+
+    return null;
+  }
+
+  double getCouponDiscountAmount(Coupon coupon) {
+    final subtotal = getCartSubTotal();
+    final discountType = coupon.discountType ?? 'fixed';
+    double discount = 0;
+    if (discountType == 'fixed') {
+      discount = coupon.discountAmount ?? 0;
+    } else {
+      final discountPercentage = coupon.discountAmount ?? 0;
+      discount = subtotal * (discountPercentage / 100);
+    }
+    return discount.clamp(0, subtotal).toDouble();
   }
 
   Future<void> submitOrder(BuildContext context) async {

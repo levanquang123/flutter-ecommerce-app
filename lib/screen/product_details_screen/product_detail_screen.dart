@@ -7,6 +7,7 @@ import '../review_screen/product_review_screen.dart';
 import '../../../../widget/carousel_slider.dart';
 import '../../../../widget/page_wrapper.dart';
 import '../../models/product.dart';
+import '../../utility/currency_formatter.dart';
 import 'components/product_rating_section.dart';
 import 'provider/product_detail_provider.dart';
 
@@ -30,10 +31,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   String _formatPrice(double value) {
-    if (value == value.toInt()) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(2);
+    return formatUsd(value);
   }
 
   String _formatRange(List<double> values) {
@@ -153,23 +151,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             },
                           ),
                           const SizedBox(height: 10),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '\$$displayPrice',
-                                style: Theme.of(context).textTheme.displayLarge,
-                              ),
-                              const SizedBox(width: 6),
-                              if (hasDiscount)
-                                Text(
-                                  '\$$originalPriceText',
-                                  style: const TextStyle(
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w500,
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.end,
+                                children: [
+                                  Text(
+                                    displayPrice,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayLarge,
                                   ),
-                                ),
-                              const Spacer(),
+                                  if (hasDiscount)
+                                    Text(
+                                      originalPriceText,
+                                      style: const TextStyle(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
                               Text(
                                 hasVariants && resolvedVariant == null
                                     ? 'Select all options'
@@ -236,7 +243,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             decoration: BoxDecoration(
                                               color: isSelected
                                                   ? const Color(0xFFEC6813)
-                                                      .withOpacity(0.08)
+                                                      .withValues(alpha: 0.08)
                                                   : Colors.white,
                                               borderRadius:
                                                   BorderRadius.circular(12),
@@ -251,7 +258,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                       BoxShadow(
                                                         color: const Color(
                                                                 0xFFEC6813)
-                                                            .withOpacity(0.15),
+                                                            .withValues(
+                                                                alpha: 0.15),
                                                         blurRadius: 10,
                                                         offset:
                                                             const Offset(0, 4),
