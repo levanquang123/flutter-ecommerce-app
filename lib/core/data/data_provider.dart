@@ -321,7 +321,8 @@ class DataProvider extends ChangeNotifier {
           response.body,
           (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
         );
-        _allOrders = apiResponse.data ?? [];
+        _allOrders =
+            (apiResponse.data ?? []).where(_shouldShowInOrderHistory).toList();
         _filteredOrders = List.from(_allOrders);
         notifyListeners();
         if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
@@ -347,6 +348,31 @@ class DataProvider extends ChangeNotifier {
       }
       return false;
     }
+  }
+
+  bool _shouldShowInOrderHistory(Order order) {
+    final paymentMethod = (order.paymentMethod ?? '').toLowerCase().trim();
+    final orderStatus = (order.orderStatus ?? '').toLowerCase().trim();
+    final paymentStatus = (order.paymentStatus ?? '').toLowerCase().trim();
+
+    if (paymentMethod == 'prepaid') {
+      const unpaidStatuses = {
+        'pending_payment',
+        'pending payment',
+        'requires_payment_method',
+        'requires_confirmation',
+        'requires_action',
+        'requires_capture',
+        'unpaid',
+      };
+
+      if (unpaidStatuses.contains(orderStatus) ||
+          unpaidStatuses.contains(paymentStatus)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   double calculateDiscountPercentage(num originalPrice, num? discountedPrice) {
