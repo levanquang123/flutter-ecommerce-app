@@ -222,6 +222,13 @@ class HttpService extends GetConnect {
     return str.isEmpty ? null : str;
   }
 
+  static bool _storedRefreshTokenChanged(String previousRefreshToken) {
+    final latestRefreshToken = _readString(REFRESH_TOKEN);
+    return latestRefreshToken != null &&
+        latestRefreshToken.isNotEmpty &&
+        latestRefreshToken != previousRefreshToken;
+  }
+
   static String parseApiMessage(
     dynamic body, {
     String fallback = 'Something went wrong. Please try again.',
@@ -483,9 +490,11 @@ class HttpService extends GetConnect {
 
     final completer = Completer<bool>();
     _refreshCompleter = completer;
+    String? attemptedRefreshToken;
 
     try {
       final refreshToken = _readString(REFRESH_TOKEN);
+      attemptedRefreshToken = refreshToken;
       if ((refreshToken ?? '').isEmpty) {
         await handleSessionExpired(navigateToLogin: navigateOnFail);
         completer.complete(false);
@@ -508,6 +517,11 @@ class HttpService extends GetConnect {
             return true;
           }
         }
+      }
+
+      if (_storedRefreshTokenChanged(refreshToken!)) {
+        completer.complete(true);
+        return true;
       }
 
       await handleSessionExpired(navigateToLogin: navigateOnFail);
@@ -533,6 +547,11 @@ class HttpService extends GetConnect {
           scope.setTag('method', 'POST');
         },
       );
+      if (attemptedRefreshToken != null &&
+          _storedRefreshTokenChanged(attemptedRefreshToken)) {
+        completer.complete(true);
+        return true;
+      }
       await handleSessionExpired(navigateToLogin: navigateOnFail);
       completer.complete(false);
       return false;
