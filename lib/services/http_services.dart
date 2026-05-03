@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -206,6 +208,8 @@ class HttpService extends GetConnect {
     return '$base$path';
   }
 
+  Uri _buildUri(String endpoint) => Uri.parse(_buildUrl(endpoint));
+
   static String _normalizeEndpoint(String endpointUrl) {
     String endpoint = endpointUrl.trim();
     if (endpoint.startsWith('http')) {
@@ -230,6 +234,18 @@ class HttpService extends GetConnect {
     return latestRefreshToken != null &&
         latestRefreshToken.isNotEmpty &&
         latestRefreshToken != previousRefreshToken;
+  }
+
+  static bool _isExplicitInvalidRefreshResponse(Response<dynamic> response) {
+    final body = response.body;
+    if (body is! Map) return response.statusCode == 401;
+    final message = body['message']?.toString().toLowerCase() ?? '';
+    return response.statusCode == 401 &&
+        (message.contains('invalid or expired refresh token') ||
+            message.contains('refresh token expired') ||
+            message.contains('refresh token is required') ||
+            message.contains('session expired') ||
+            message.contains('invalid token type'));
   }
 
   static String parseApiMessage(
@@ -504,9 +520,35 @@ class HttpService extends GetConnect {
         return false;
       }
 
-      final response = await post(
-        _buildUrl('users/refresh-token'),
-        {'refreshToken': refreshToken},
+      final requestId = _uuid.v4();
+      final rawResponse = await http
+          .post(
+            _buildUri('users/refresh-token'),
+            headers: {
+              'content-type': 'application/json',
+              'accept': 'application/json',
+              'x-client-type': _clientType,
+              'x-request-id': requestId,
+              'x-refresh-token': refreshToken!,
+              ..._buildTracingHeaders(),
+            },
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      dynamic decodedBody;
+      try {
+        decodedBody =
+            rawResponse.body.isEmpty ? null : jsonDecode(rawResponse.body);
+      } catch (_) {
+        decodedBody = rawResponse.body;
+      }
+
+      final response = Response<dynamic>(
+        body: decodedBody,
+        statusCode: rawResponse.statusCode,
+        statusText: rawResponse.reasonPhrase,
+        headers: rawResponse.headers,
       );
 
       if (response.isOk && response.body is Map<String, dynamic>) {
@@ -522,12 +564,14 @@ class HttpService extends GetConnect {
         }
       }
 
-      if (_storedRefreshTokenChanged(refreshToken!)) {
+      if (_storedRefreshTokenChanged(refreshToken)) {
         completer.complete(true);
         return true;
       }
 
-      await handleSessionExpired(navigateToLogin: navigateOnFail);
+      if (_isExplicitInvalidRefreshResponse(response)) {
+        await handleSessionExpired(navigateToLogin: navigateOnFail);
+      }
       completer.complete(false);
       return false;
     } catch (e, stackTrace) {
@@ -555,7 +599,6 @@ class HttpService extends GetConnect {
         completer.complete(true);
         return true;
       }
-      await handleSessionExpired(navigateToLogin: navigateOnFail);
       completer.complete(false);
       return false;
     } finally {

@@ -5,6 +5,7 @@ import '../../widget/navigation_tile.dart';
 import 'package:flutter/material.dart';
 import '../../utility/app_color.dart';
 import '../my_order_screen/my_order_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -57,6 +58,23 @@ class ProfileScreen extends StatelessWidget {
             child: NavigationTile(
               icon: Icons.location_on,
               title: 'My Addresses',
+            ),
+          ),
+          const SizedBox(height: 15),
+          InkWell(
+            onTap: () async {
+              final url = Uri.parse('https://policy.levanquang.com/');
+              try {
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              } catch (e) {
+                debugPrint('Could not launch policy url: $e');
+              }
+            },
+            child: const NavigationTile(
+              icon: Icons.privacy_tip,
+              title: 'Privacy Policy',
             ),
           ),
           const SizedBox(height: 20),

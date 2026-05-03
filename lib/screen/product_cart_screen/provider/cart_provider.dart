@@ -660,7 +660,7 @@ class CartProvider extends ChangeNotifier {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           customFlow: false,
-          merchantDisplayName: 'MOBIZATE',
+          merchantDisplayName: 'QMarket',
           paymentIntentClientSecret: paymentIntent,
           customerEphemeralKeySecret: ephemeralKey,
           customerId: customer,
