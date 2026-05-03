@@ -5,7 +5,6 @@ import '../../../models/cart.dart';
 import '../../../models/product.dart';
 import '../../../utility/app_color.dart';
 import '../../../utility/currency_formatter.dart';
-import '../../../utility/network_image_url.dart';
 import '../../../utility/utility_extension.dart';
 import '../../../widget/custom_network_image.dart';
 
@@ -44,11 +43,9 @@ class CartListSection extends StatelessWidget {
           );
 
           final variant = _findVariant(product, cartItem.variantId);
-          final productImage = normalizeNetworkImageUrl(
-            cartItem.image.isNotEmpty
-                ? cartItem.image
-                : product.images.safeElementAt(0)?.url,
-          );
+          final productImage = cartItem.image.isNotEmpty
+              ? cartItem.image
+              : product.images.safeElementAt(0)?.url ?? '';
           final productName = product.name ?? 'Product';
           final originalPrice = variant?.price ?? product.price;
           final hasOriginalPrice =
