@@ -219,7 +219,10 @@ class HttpService extends GetConnect {
     final value = _box.read(key);
     if (value == null) return null;
     final str = value.toString().trim();
-    return str.isEmpty ? null : str;
+    if (str.isEmpty || str == 'null' || str == 'undefined') {
+      return null;
+    }
+    return str;
   }
 
   static bool _storedRefreshTokenChanged(String previousRefreshToken) {

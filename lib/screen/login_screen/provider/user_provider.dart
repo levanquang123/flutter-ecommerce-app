@@ -25,6 +25,17 @@ class UserProvider extends ChangeNotifier {
 
   User? get currentUser => _currentUser;
 
+  String? _readToken(String key) {
+    final value = box.read(key);
+    if (value == null) return null;
+
+    final token = value.toString().trim();
+    if (token.isEmpty || token == 'null' || token == 'undefined') {
+      return null;
+    }
+    return token;
+  }
+
   Future<String?> login(LoginData data) async {
     try {
       final loginData = {
@@ -157,7 +168,8 @@ class UserProvider extends ChangeNotifier {
     if (payload['data'] is Map<String, dynamic>) {
       payload = payload['data'];
     }
-    if (payload is Map<String, dynamic> && payload['user'] is Map<String, dynamic>) {
+    if (payload is Map<String, dynamic> &&
+        payload['user'] is Map<String, dynamic>) {
       payload = payload['user'];
     }
 
@@ -168,7 +180,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   User? getLoginUsr() {
-    final token = box.read(TOKEN)?.toString();
+    final token = _readToken(TOKEN);
     if ((token ?? '').isEmpty) {
       _currentUser = null;
       _dataProvider.user = null;
@@ -183,7 +195,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> logOutUser() async {
-    final accessToken = box.read(TOKEN)?.toString();
+    final accessToken = _readToken(TOKEN);
     if ((accessToken ?? '').isNotEmpty) {
       try {
         await service.addItem(

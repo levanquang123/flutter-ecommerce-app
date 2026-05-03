@@ -2,7 +2,7 @@ import '../../product_by_category_screen/product_by_category_screen.dart';
 import '../../../utility/animation/open_container_wrapper.dart';
 import 'package:flutter/material.dart';
 import '../../../models/category.dart';
-import '../../../utility/constants.dart';
+import '../../../utility/network_image_url.dart';
 
 class CategorySelector extends StatelessWidget {
   final List<Category> categories;
@@ -21,23 +21,23 @@ class CategorySelector extends StatelessWidget {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
-          
-          String imageUrl = category.image ?? '';
-          if (imageUrl.contains('localhost')) {
-            imageUrl = imageUrl.replaceAll('http://localhost:3000', MAIN_URL.replaceAll(RegExp(r'/$'), ''));
-          }
+
+          final imageUrl = normalizeNetworkImageUrl(category.image);
 
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6,vertical: 1),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             child: OpenContainerWrapper(
-              nextScreen: ProductByCategoryScreen(selectedCategory: categories[index]),
+              nextScreen:
+                  ProductByCategoryScreen(selectedCategory: categories[index]),
               child: Container(
                 width: 80,
                 height: 80,
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: category.isSelected ? const Color(0xFFf16b26) : const Color(0xFFE5E6E8),
+                  color: category.isSelected
+                      ? const Color(0xFFf16b26)
+                      : const Color(0xFFE5E6E8),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
@@ -59,7 +59,8 @@ class CategorySelector extends StatelessWidget {
                     Text(
                       category.name ?? '',
                       style: TextStyle(
-                        color: category.isSelected ? Colors.white : Colors.black,
+                        color:
+                            category.isSelected ? Colors.white : Colors.black,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,

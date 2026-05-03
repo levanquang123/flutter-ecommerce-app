@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utility/constants.dart';
+import '../utility/network_image_url.dart';
 
 class CustomNetworkImage extends StatelessWidget {
   final String imageUrl;
@@ -16,31 +16,7 @@ class CustomNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String finalImageUrl = imageUrl.trim().replaceAll('\\', '/');
-    final String normalizedBase = MAIN_URL.replaceAll(RegExp(r'/$'), '');
-
-    if (finalImageUrl.contains('localhost')) {
-      finalImageUrl =
-          finalImageUrl.replaceAll('http://localhost:3000', normalizedBase);
-    }
-
-    if (finalImageUrl.isNotEmpty &&
-        !finalImageUrl.startsWith('http://') &&
-        !finalImageUrl.startsWith('https://')) {
-      if (finalImageUrl.startsWith('/')) {
-        finalImageUrl = '$normalizedBase$finalImageUrl';
-      } else {
-        finalImageUrl = '$normalizedBase/$finalImageUrl';
-      }
-    }
-
-    // Cloudinary images should always be served through https.
-    if (finalImageUrl.contains('res.cloudinary.com') &&
-        finalImageUrl.startsWith('http://')) {
-      finalImageUrl = finalImageUrl.replaceFirst('http://', 'https://');
-    }
-
-    finalImageUrl = Uri.encodeFull(finalImageUrl);
+    final finalImageUrl = normalizeNetworkImageUrl(imageUrl);
 
     if (finalImageUrl.isEmpty) {
       return const Icon(Icons.image_not_supported, color: Colors.grey);
@@ -50,8 +26,8 @@ class CustomNetworkImage extends StatelessWidget {
       finalImageUrl,
       fit: fit,
       scale: scale,
-      loadingBuilder:
-          (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+      loadingBuilder: (BuildContext context, Widget child,
+          ImageChunkEvent? loadingProgress) {
         if (loadingProgress == null) return child;
         return Center(
           child: CircularProgressIndicator(
