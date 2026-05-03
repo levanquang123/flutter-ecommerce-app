@@ -153,16 +153,17 @@ class ProductGridTile extends StatelessWidget {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(15),
         decoration: const BoxDecoration(
           color: Color(0xFFE5E6E8),
         ),
-        child: CustomNetworkImage(
-          imageUrl: product.images!.isNotEmpty
-              ? product.images?.safeElementAt(0)?.url ?? ''
-              : '',
-          fit: BoxFit.scaleDown,
-          scale: 3.0,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 52, 14, 78),
+          child: CustomNetworkImage(
+            imageUrl: product.images!.isNotEmpty
+                ? product.images?.safeElementAt(0)?.url ?? ''
+                : '',
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
