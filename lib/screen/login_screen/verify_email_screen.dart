@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:e_commerce_flutter/utility/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../utility/app_color.dart';
 import '../../widget/page_wrapper.dart';
-import '../home_screen.dart';
+import 'login_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -19,11 +21,43 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final _codeController = TextEditingController();
   bool _isVerifying = false;
   bool _isResending = false;
+  int _resendSeconds = 60;
+  Timer? _resendTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendCountdown();
+  }
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _startResendCountdown() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_resendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _resendSeconds = 0);
+        return;
+      }
+      setState(() => _resendSeconds -= 1);
+    });
+  }
+
+  String _maskedEmail(String email) {
+    final parts = email.split('@');
+    if (parts.length != 2) return email;
+    final name = parts[0];
+    final domain = parts[1];
+    if (name.length <= 2) return '${name[0]}***@$domain';
+    return '${name[0]}***${name[name.length - 1]}@$domain';
   }
 
   Future<void> _verify() async {
@@ -47,7 +81,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
     );
   }
@@ -61,7 +95,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
     if (error != null) {
       _showError(error);
+      return;
     }
+    _startResendCountdown();
   }
 
   void _showError(String message) {
@@ -109,7 +145,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'We sent a 6-digit code to ${widget.email}.',
+                  'We sent a 6-digit code to ${_maskedEmail(widget.email)}.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
@@ -164,9 +200,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: _isResending ? null : _resend,
+                  onPressed:
+                      (_isResending || _resendSeconds > 0) ? null : _resend,
                   child: Text(
-                    _isResending ? 'Sending code...' : 'Send a new code',
+                    _isResending
+                        ? 'Sending code...'
+                        : _resendSeconds > 0
+                            ? 'Send a new code in ${_resendSeconds}s'
+                            : 'Send a new code',
                   ),
                 ),
                 const Spacer(),

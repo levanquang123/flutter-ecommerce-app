@@ -109,22 +109,22 @@ class UserProvider extends ChangeNotifier {
         );
       }
 
-      final apiResponse = ApiResponse<User>.fromJson(
-        response.body,
-        (json) => User.fromJson(json as Map<String, dynamic>),
-      );
+      final success =
+          response.body is Map<String, dynamic> && response.body['success'] == true;
 
-      if (apiResponse.success) {
-        await saveLoginInfo(apiResponse.data);
+      if (success) {
         _pendingVerificationEmail = signupData['email'];
-        SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+        SnackBarHelper.showSuccessSnackBar(
+          HttpService.parseResponseMessage(
+            response,
+            fallback: 'Verification code sent. Please check your email.',
+          ),
+        );
         return null;
       }
       return HttpService.parseApiMessage(
         response.body,
-        fallback: apiResponse.message.isNotEmpty
-            ? apiResponse.message
-            : 'Unable to create your account. Please try again.',
+        fallback: 'Unable to create your account. Please try again.',
       );
     } catch (e) {
       log('Register Error: $e');
@@ -171,27 +171,9 @@ class UserProvider extends ChangeNotifier {
         );
       }
 
-      final verifiedUser = apiResponse.data;
-      if (verifiedUser != null && _currentUser != null) {
-        final mergedUser = User(
-          sId: _currentUser?.sId ?? verifiedUser.sId,
-          email: verifiedUser.email ?? _currentUser?.email,
-          googleId: verifiedUser.googleId ?? _currentUser?.googleId,
-          favorites: verifiedUser.favorites ?? _currentUser?.favorites,
-          role: verifiedUser.role ?? _currentUser?.role,
-          emailVerified: true,
-          address: verifiedUser.address ?? _currentUser?.address,
-          accessToken: _currentUser?.accessToken,
-          refreshToken: _currentUser?.refreshToken,
-          tokenType: _currentUser?.tokenType,
-          accessTokenExpiresIn: _currentUser?.accessTokenExpiresIn,
-          createdAt: verifiedUser.createdAt ?? _currentUser?.createdAt,
-          updatedAt: verifiedUser.updatedAt ?? _currentUser?.updatedAt,
-          iV: verifiedUser.iV ?? _currentUser?.iV,
-        );
-        await saveLoginInfo(mergedUser);
-      }
-
+      await HttpService.clearAuthSession();
+      _currentUser = null;
+      _dataProvider.user = null;
       _pendingVerificationEmail = null;
       notifyListeners();
       SnackBarHelper.showSuccessSnackBar(apiResponse.message);
