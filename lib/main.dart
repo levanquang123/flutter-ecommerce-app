@@ -80,8 +80,6 @@ Future<void> main() async {
             GetStorage.init(),
           ]);
 
-          await PushNotificationService.initialize();
-
           final bool isAuthenticated = await HttpService.bootstrapSession();
 
           final box = GetStorage();
@@ -97,11 +95,6 @@ Future<void> main() async {
           if (loginUser?.emailVerified == false) {
             await HttpService.clearAuthSession();
             loginUser = null;
-          }
-          if (loginUser == null) {
-            await PushNotificationService.clearUser();
-          } else {
-            await PushNotificationService.identifyUser(loginUser);
           }
           await HttpService.setSentryUser(loginUser);
 
@@ -181,9 +174,19 @@ class _MyAppState extends State<MyApp> {
       final userProvider = context.read<UserProvider>();
       final cartProvider = context.read<CartProvider>();
       final profileProvider = context.read<ProfileProvider>();
+      unawaited(_syncPushNotifications(dataProvider.user));
       _loadInitialData(
           dataProvider, userProvider, cartProvider, profileProvider);
     });
+  }
+
+  Future<void> _syncPushNotifications(User? user) async {
+    await PushNotificationService.initialize();
+    if (user == null) {
+      await PushNotificationService.clearUser();
+      return;
+    }
+    await PushNotificationService.identifyUser(user);
   }
 
   void _loadInitialData(
