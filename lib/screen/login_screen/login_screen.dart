@@ -18,7 +18,18 @@ class LoginScreen extends StatelessWidget {
         return await context.userProvider.login(loginData);
       },
       onSignup: (SignupData data) async {
-        return await context.userProvider.register(data);
+        final error = await context.userProvider.register(data);
+        if (error == null && context.mounted) {
+          final pendingEmail = context.userProvider.pendingVerificationEmail;
+          if (pendingEmail != null && pendingEmail.isNotEmpty) {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (context) {
+                return VerifyEmailScreen(email: pendingEmail);
+              },
+            ));
+          }
+        }
+        return error;
       },
       onSubmitAnimationCompleted: () {
         final pendingEmail = context.userProvider.pendingVerificationEmail;
