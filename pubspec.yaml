@@ -38,6 +38,16 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
+  sentry_dart_plugin: ^3.3.0
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: false
+  upload_sources: true
+  wait_for_processing: true
+  log_level: error
+  commits: auto
+  ignore_missing: true
 
 flutter_launcher_icons:
   android: "launcher_icon"

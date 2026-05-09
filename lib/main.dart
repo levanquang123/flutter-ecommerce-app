@@ -32,12 +32,14 @@ Future<void> main() async {
   final isProduction = sentryEnvironment.toLowerCase() == 'production';
   final release =
       'mobile-client@${packageInfo.version}+${packageInfo.buildNumber}';
+  final dist = packageInfo.buildNumber;
 
   await SentryFlutter.init(
     (options) {
       options.dsn = sentryDsn;
       options.environment = sentryEnvironment;
       options.release = release;
+      options.dist = dist;
       options.sendDefaultPii = false;
       options.tracesSampleRate = isProduction ? 0.1 : 1.0;
       options.profilesSampleRate = isProduction ? 0.0 : 1.0;
