@@ -7,6 +7,7 @@ class User {
   final String? password;
   final String? googleId;
   final String? role;
+  final bool emailVerified;
   List<Product>? favorites;
   final Address? address;
   final String? accessToken;
@@ -24,6 +25,7 @@ class User {
     this.googleId,
     this.favorites,
     this.role,
+    this.emailVerified = false,
     this.address,
     this.accessToken,
     this.refreshToken,
@@ -48,6 +50,7 @@ class User {
       password: userData['password']?.toString(),
       googleId: userData['googleId']?.toString(),
       role: userData['role']?.toString(),
+      emailVerified: userData['emailVerified'] == true,
       accessToken: (json['accessToken'] ??
               json['token'] ??
               userData['accessToken'] ??
@@ -82,6 +85,7 @@ class User {
       '_id': sId,
       'email': email,
       'googleId': googleId,
+      'emailVerified': emailVerified,
       'favorites': favorites?.map((e) => e.toJson()).toList() ?? [],
       'role': role,
       'address': address?.toJson(),

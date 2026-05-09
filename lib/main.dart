@@ -14,6 +14,7 @@ import 'services/push_notification_service.dart';
 import 'screen/home_screen.dart';
 import 'screen/login_screen/login_screen.dart';
 import 'screen/login_screen/provider/user_provider.dart';
+import 'screen/login_screen/verify_email_screen.dart';
 import 'screen/product_by_category_screen/provider/product_by_category_provider.dart';
 import 'screen/product_cart_screen/provider/cart_provider.dart';
 import 'screen/product_details_screen/provider/product_detail_provider.dart';
@@ -203,6 +204,9 @@ class _MyAppState extends State<MyApp> {
     HttpService.setCurrentRouteName(
       widget.isAuthenticated ? 'HomeScreen' : 'LoginScreen',
     );
+    final user = context.read<UserProvider>().getLoginUsr();
+    final needsEmailVerification =
+        widget.isAuthenticated && user?.emailVerified == false;
 
     return GetMaterialApp(
       scrollBehavior: const MaterialScrollBehavior().copyWith(
@@ -217,7 +221,11 @@ class _MyAppState extends State<MyApp> {
         AppRouteObserver(),
       ],
       theme: AppTheme.lightAppTheme,
-      home: widget.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+      home: needsEmailVerification
+          ? VerifyEmailScreen(email: user?.email ?? '')
+          : widget.isAuthenticated
+              ? const HomeScreen()
+              : const LoginScreen(),
     );
   }
 }

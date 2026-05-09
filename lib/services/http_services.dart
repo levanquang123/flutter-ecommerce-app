@@ -442,6 +442,7 @@ class HttpService extends GetConnect {
       googleId: user.googleId ?? storedUser?.googleId,
       favorites: user.favorites ?? storedUser?.favorites,
       role: user.role ?? storedUser?.role,
+      emailVerified: user.emailVerified || (storedUser?.emailVerified ?? false),
       address: user.address ?? storedUser?.address,
       accessToken:
           user.accessToken ?? storedUser?.accessToken ?? _readString(TOKEN),

@@ -18,12 +18,18 @@ class UserProvider extends ChangeNotifier {
   final DataProvider _dataProvider;
   final GetStorage box = GetStorage();
   User? _currentUser;
+  String? _pendingVerificationEmail;
 
   UserProvider(this._dataProvider) {
     _currentUser = _dataProvider.user;
   }
 
   User? get currentUser => _currentUser;
+  String? get pendingVerificationEmail => _pendingVerificationEmail;
+
+  void clearPendingVerificationEmail() {
+    _pendingVerificationEmail = null;
+  }
 
   String? _readToken(String key) {
     return HttpService.readStoredToken(key);
@@ -66,6 +72,11 @@ class UserProvider extends ChangeNotifier {
 
       await saveLoginInfo(apiResponse.data);
       await fetchCurrentUserProfile(showSnack: false);
+      if (_currentUser?.emailVerified == false) {
+        _pendingVerificationEmail = _currentUser?.email ?? loginData['email'];
+      } else {
+        _pendingVerificationEmail = null;
+      }
 
       SnackBarHelper.showSuccessSnackBar(apiResponse.message);
       return null;
@@ -104,6 +115,8 @@ class UserProvider extends ChangeNotifier {
       );
 
       if (apiResponse.success) {
+        await saveLoginInfo(apiResponse.data);
+        _pendingVerificationEmail = signupData['email'];
         SnackBarHelper.showSuccessSnackBar(apiResponse.message);
         return null;
       }
@@ -118,6 +131,106 @@ class UserProvider extends ChangeNotifier {
       return HttpService.humanizeError(
         e,
         fallback: 'Unable to create your account right now. Please try again.',
+      );
+    }
+  }
+
+  Future<String?> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final response = await service.addItem(
+        endpointUrl: 'users/verify-email',
+        itemData: {
+          'email': email.trim().toLowerCase(),
+          'code': code.trim(),
+        },
+        includeAuth: false,
+        allowRefreshOn401: false,
+      );
+
+      if (!response.isOk) {
+        return HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to verify this code. Please try again.',
+        );
+      }
+
+      final apiResponse = ApiResponse<User>.fromJson(
+        response.body,
+        (json) => User.fromJson(json as Map<String, dynamic>),
+      );
+
+      if (!apiResponse.success) {
+        return HttpService.parseApiMessage(
+          response.body,
+          fallback: apiResponse.message.isNotEmpty
+              ? apiResponse.message
+              : 'Unable to verify this code. Please try again.',
+        );
+      }
+
+      final verifiedUser = apiResponse.data;
+      if (verifiedUser != null && _currentUser != null) {
+        final mergedUser = User(
+          sId: _currentUser?.sId ?? verifiedUser.sId,
+          email: verifiedUser.email ?? _currentUser?.email,
+          googleId: verifiedUser.googleId ?? _currentUser?.googleId,
+          favorites: verifiedUser.favorites ?? _currentUser?.favorites,
+          role: verifiedUser.role ?? _currentUser?.role,
+          emailVerified: true,
+          address: verifiedUser.address ?? _currentUser?.address,
+          accessToken: _currentUser?.accessToken,
+          refreshToken: _currentUser?.refreshToken,
+          tokenType: _currentUser?.tokenType,
+          accessTokenExpiresIn: _currentUser?.accessTokenExpiresIn,
+          createdAt: verifiedUser.createdAt ?? _currentUser?.createdAt,
+          updatedAt: verifiedUser.updatedAt ?? _currentUser?.updatedAt,
+          iV: verifiedUser.iV ?? _currentUser?.iV,
+        );
+        await saveLoginInfo(mergedUser);
+      }
+
+      _pendingVerificationEmail = null;
+      notifyListeners();
+      SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      return null;
+    } catch (e) {
+      return HttpService.humanizeError(
+        e,
+        fallback: 'Unable to verify email right now. Please try again.',
+      );
+    }
+  }
+
+  Future<String?> resendVerificationCode(String email) async {
+    try {
+      final response = await service.addItem(
+        endpointUrl: 'users/resend-verification-code',
+        itemData: {'email': email.trim().toLowerCase()},
+        includeAuth: false,
+        allowRefreshOn401: false,
+      );
+
+      if (!response.isOk) {
+        return HttpService.parseResponseMessage(
+          response,
+          fallback: 'Unable to send a new code. Please try again.',
+        );
+      }
+
+      SnackBarHelper.showSuccessSnackBar(
+        HttpService.parseResponseMessage(
+          response,
+          fallback: 'Verification code sent.',
+        ),
+      );
+      return null;
+    } catch (e) {
+      return HttpService.humanizeError(
+        e,
+        fallback: 'Unable to send a new code right now. Please try again.',
       );
     }
   }
@@ -203,6 +316,7 @@ class UserProvider extends ChangeNotifier {
     await HttpService.clearAuthSession();
 
     _currentUser = null;
+    _pendingVerificationEmail = null;
     _dataProvider.user = null;
     notifyListeners();
     Get.offAll(() => const LoginScreen());
