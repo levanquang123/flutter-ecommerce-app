@@ -48,6 +48,9 @@ local.properties
 app.*.symbols
 app.*.map.json
 
+# Local build configuration
+config/dart_defines/*.local.json
+
 # Android build artifacts
 /android/app/debug
 /android/app/profile

@@ -2,7 +2,7 @@ name: e_commerce_flutter
 description: E-Commerce App built in flutter using GetX
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -21,6 +21,7 @@ dependencies:
   dropdown_button2: ^2.3.9
   flutter_cart: ^0.0.9
   get_storage: ^2.1.1
+  flutter_secure_storage: ^8.1.0
   flutter_login: ^5.0.0
   webview_flutter: ^4.7.0
   flutter_stripe: ^10.1.1

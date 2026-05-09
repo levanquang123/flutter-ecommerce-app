@@ -1,4 +1,4 @@
-package com.sinasys.e_commerce_flutter
+package com.levanquang.qmarket
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.sinasys.e_commerce_flutter">
+    package="com.levanquang.qmarket">
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <queries>

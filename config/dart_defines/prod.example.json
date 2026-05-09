@@ -1,0 +1,5 @@
+{
+  "SENTRY_ENV": "production",
+  "SENTRY_DSN": "https://your-public-key@o0000000000000000.ingest.us.sentry.io/0000000000000000",
+  "MAIN_URL": "https://api.levanquang.com"
+}

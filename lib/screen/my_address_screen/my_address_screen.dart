@@ -2,6 +2,7 @@ import '../../utility/extensions.dart';
 import 'package:flutter/material.dart';
 import '../../utility/app_color.dart';
 import '../../widget/custom_text_field.dart';
+import '../../widget/country_dropdown_field.dart';
 
 class MyAddressPage extends StatelessWidget {
   const MyAddressPage({super.key});
@@ -13,7 +14,10 @@ class MyAddressPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "My Address",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColor.darkOrange),
+          style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColor.darkOrange),
         ),
       ),
       body: SingleChildScrollView(
@@ -28,7 +32,8 @@ class MyAddressPage extends StatelessWidget {
                 children: [
                   Card(
                     elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     surfaceTintColor: Colors.white,
                     child: Padding(
                       padding: const EdgeInsets.all(20),
@@ -38,33 +43,42 @@ class MyAddressPage extends StatelessWidget {
                           CustomTextField(
                             labelText: 'Full Name',
                             onSave: (value) {},
-                            controller: context.profileProvider.fullNameController,
-                            validator: (value) => value!.isEmpty ? 'Please enter full name' : null,
+                            controller:
+                                context.profileProvider.fullNameController,
+                            validator: (value) => value!.isEmpty
+                                ? 'Please enter full name'
+                                : null,
                           ),
                           CustomTextField(
                             labelText: 'Phone',
                             onSave: (value) {},
                             inputType: TextInputType.phone,
                             controller: context.profileProvider.phoneController,
-                            validator: (value) => value!.isEmpty ? 'Please enter a phone number' : null,
+                            validator: (value) => value!.isEmpty
+                                ? 'Please enter a phone number'
+                                : null,
                           ),
                           CustomTextField(
                             labelText: 'Street',
                             onSave: (val) {},
-                            controller: context.profileProvider.streetController,
-                            validator: (value) => value!.isEmpty ? 'Please enter a street' : null,
+                            controller:
+                                context.profileProvider.streetController,
+                            validator: (value) =>
+                                value!.isEmpty ? 'Please enter a street' : null,
                           ),
                           CustomTextField(
                             labelText: 'City',
                             onSave: (value) {},
                             controller: context.profileProvider.cityController,
-                            validator: (value) => value!.isEmpty ? 'Please enter a city' : null,
+                            validator: (value) =>
+                                value!.isEmpty ? 'Please enter a city' : null,
                           ),
                           CustomTextField(
                             labelText: 'State',
                             onSave: (value) {},
                             controller: context.profileProvider.stateController,
-                            validator: (value) => value!.isEmpty ? 'Please enter a state' : null,
+                            validator: (value) =>
+                                value!.isEmpty ? 'Please enter a state' : null,
                           ),
                           Row(
                             children: [
@@ -73,17 +87,18 @@ class MyAddressPage extends StatelessWidget {
                                   labelText: 'Postal Code',
                                   onSave: (value) {},
                                   inputType: TextInputType.number,
-                                  controller: context.profileProvider.postalCodeController,
-                                  validator: (value) => value!.isEmpty ? 'Please enter a code' : null,
+                                  controller: context
+                                      .profileProvider.postalCodeController,
+                                  validator: (value) => value!.isEmpty
+                                      ? 'Please enter a code'
+                                      : null,
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: CustomTextField(
-                                  labelText: 'Country',
-                                  onSave: (value) {},
-                                  controller: context.profileProvider.countryController,
-                                  validator: (value) => value!.isEmpty ? 'Please enter a country' : null,
+                                child: CountryDropdownField(
+                                  controller:
+                                      context.profileProvider.countryController,
                                 ),
                               ),
                             ],
@@ -98,15 +113,19 @@ class MyAddressPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColor.darkOrange,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
                       ),
                       onPressed: () async {
-                        if (context.profileProvider.addressFormKey.currentState!.validate()) {
+                        if (context.profileProvider.addressFormKey.currentState!
+                            .validate()) {
                           await context.profileProvider.updateAddress();
                         }
                       },
-                      child: const Text('Update Address', style: TextStyle(fontSize: 18)),
+                      child: const Text('Update Address',
+                          style: TextStyle(fontSize: 18)),
                     ),
                   ),
                 ],

@@ -5,6 +5,7 @@ import '../../core/data/data_provider.dart';
 import '../../models/order.dart';
 import '../../models/product_review_summary.dart';
 import '../../models/review.dart';
+import '../../utility/app_color.dart';
 import '../../utility/extensions.dart';
 import '../../utility/snack_bar_helper.dart';
 import '../login_screen/login_screen.dart';
@@ -255,14 +256,15 @@ class _ProductReviewBodyState extends State<_ProductReviewBody> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                _SummaryCard(
+                _ModernSummaryCard(
                   productName: widget.productName,
                   average: average,
                   reviewCount: reviewCount,
+                  ratingBreakdown: provider.ratingBreakdown,
                   onWriteReview: _handleCreatePressed,
                 ),
-                const SizedBox(height: 16),
-                _ReviewFilterBar(
+                const SizedBox(height: 14),
+                _ModernReviewFilterBar(
                   selectedRating: provider.selectedRating,
                   selectedSort: provider.sort,
                   ratingBreakdown: provider.ratingBreakdown,
@@ -276,25 +278,27 @@ class _ProductReviewBodyState extends State<_ProductReviewBody> {
                   ),
                 if (provider.state == ReviewLoadState.error)
                   _StateContainer(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(provider.errorMessage),
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: () => provider
-                              .loadReviews(widget.productId, force: true),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+                    child: _ReviewStateMessage(
+                      icon: Icons.wifi_off_rounded,
+                      title: 'Could not load reviews',
+                      message: provider.errorMessage,
+                      actionLabel: 'Retry',
+                      onAction: () =>
+                          provider.loadReviews(widget.productId, force: true),
                     ),
                   ),
                 if (provider.state == ReviewLoadState.empty)
                   _StateContainer(
-                    child: Text(
-                      provider.selectedRating == null
-                          ? 'No reviews for this product yet.'
-                          : 'No ${provider.selectedRating}-star reviews yet.',
+                    child: _ReviewStateMessage(
+                      icon: Icons.rate_review_outlined,
+                      title: provider.selectedRating == null
+                          ? 'No reviews yet'
+                          : 'No ${provider.selectedRating}-star reviews',
+                      message: provider.selectedRating == null
+                          ? 'Be the first to share your experience with this product.'
+                          : 'Try another rating filter or check back later.',
+                      actionLabel: 'Write review',
+                      onAction: _handleCreatePressed,
                     ),
                   ),
                 if (provider.state == ReviewLoadState.success)
@@ -321,13 +325,22 @@ class _ProductReviewBodyState extends State<_ProductReviewBody> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _handleCreatePressed,
-        icon: const Icon(Icons.rate_review),
-        label: const Text('Write review'),
+        backgroundColor: AppColor.darkOrange,
+        foregroundColor: Colors.white,
+        elevation: 8,
+        extendedPadding: const EdgeInsets.symmetric(horizontal: 22),
+        extendedIconLabelSpacing: 12,
+        icon: const Icon(Icons.rate_review, size: 26),
+        label: const Text(
+          'Write review',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _ReviewFilterBar extends StatelessWidget {
   final int? selectedRating;
   final String selectedSort;
@@ -570,6 +583,7 @@ class _ReviewComposerDialogState extends State<_ReviewComposerDialog> {
   }
 }
 
+// ignore: unused_element
 class _SummaryCard extends StatelessWidget {
   final String productName;
   final double average;
@@ -624,7 +638,385 @@ class _SummaryCard extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onWriteReview,
             icon: const Icon(Icons.edit),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(154, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
             label: const Text('Write review'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModernReviewFilterBar extends StatelessWidget {
+  final int? selectedRating;
+  final String selectedSort;
+  final List<RatingBreakdownItem> ratingBreakdown;
+  final ValueChanged<int?> onSelectRating;
+  final ValueChanged<String> onSortChanged;
+
+  const _ModernReviewFilterBar({
+    required this.selectedRating,
+    required this.selectedSort,
+    required this.ratingBreakdown,
+    required this.onSelectRating,
+    required this.onSortChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Filter reviews',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+              _ModernSortMenu(
+                value: selectedSort,
+                onChanged: onSortChanged,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ModernRatingChip(
+                label: 'All',
+                count: null,
+                selected: selectedRating == null,
+                onSelected: () => onSelectRating(null),
+              ),
+              ...ratingBreakdown.map((item) {
+                return _ModernRatingChip(
+                  label: '${item.rating}',
+                  count: item.count,
+                  selected: selectedRating == item.rating,
+                  onSelected: () => onSelectRating(item.rating),
+                );
+              }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModernSortMenu extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _ModernSortMenu({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          borderRadius: BorderRadius.circular(14),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          onChanged: (next) {
+            if (next != null) onChanged(next);
+          },
+          items: const [
+            DropdownMenuItem(value: 'newest', child: Text('Newest')),
+            DropdownMenuItem(value: 'oldest', child: Text('Oldest')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModernRatingChip extends StatelessWidget {
+  final String label;
+  final int? count;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _ModernRatingChip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (_) => onSelected(),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      selectedColor: AppColor.darkOrange.withValues(alpha: 0.13),
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: selected ? AppColor.darkOrange : Colors.grey.shade300,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (selected) ...[
+            const Icon(
+              Icons.check_rounded,
+              size: 17,
+              color: AppColor.darkOrange,
+            ),
+            const SizedBox(width: 4),
+          ],
+          if (count != null) ...[
+            Icon(
+              Icons.star_rounded,
+              size: 17,
+              color: selected ? AppColor.darkOrange : Colors.amber.shade700,
+            ),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            count == null ? label : '$label ($count)',
+            style: TextStyle(
+              color: selected ? AppColor.darkOrange : Colors.grey.shade800,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModernSummaryCard extends StatelessWidget {
+  final String productName;
+  final double average;
+  final int reviewCount;
+  final List<RatingBreakdownItem> ratingBreakdown;
+  final VoidCallback onWriteReview;
+
+  const _ModernSummaryCard({
+    required this.productName,
+    required this.average,
+    required this.reviewCount,
+    required this.ratingBreakdown,
+    required this.onWriteReview,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            productName.isEmpty ? 'Product' : productName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 104,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColor.darkOrange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          color: Colors.amber.shade700,
+                          size: 26,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          average.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$reviewCount ${reviewCount == 1 ? 'review' : 'reviews'}',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: ratingBreakdown
+                      .map(
+                        (item) => _ModernRatingBreakdownRow(
+                          item: item,
+                          total: reviewCount,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onWriteReview,
+            icon: const Icon(Icons.edit),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColor.darkOrange,
+              side: const BorderSide(color: AppColor.darkOrange),
+              minimumSize: const Size.fromHeight(50),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            label: const Text('Write review'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModernRatingBreakdownRow extends StatelessWidget {
+  final RatingBreakdownItem item;
+  final int total;
+
+  const _ModernRatingBreakdownRow({
+    required this.item,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total <= 0 ? 0.0 : item.count / total;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Row(
+              children: [
+                Text(
+                  '${item.rating}',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Icon(
+                  Icons.star_rounded,
+                  size: 13,
+                  color: Colors.amber.shade700,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 7,
+                backgroundColor: Colors.grey.shade200,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppColor.darkOrange),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 20,
+            child: Text(
+              '${item.count}',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -755,6 +1147,71 @@ class _ReviewTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ReviewStateMessage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _ReviewStateMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: AppColor.darkOrange.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppColor.darkOrange, size: 34),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontSize: 14,
+            height: 1.35,
+          ),
+        ),
+        if (actionLabel != null && onAction != null) ...[
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: onAction,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColor.darkOrange,
+              side: const BorderSide(color: AppColor.darkOrange),
+              minimumSize: const Size(140, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: Text(actionLabel!),
+          ),
+        ],
+      ],
     );
   }
 }

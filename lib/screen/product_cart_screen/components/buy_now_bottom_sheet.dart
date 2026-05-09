@@ -4,6 +4,7 @@ import '../../../widget/compleate_order_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../widget/applay_coupon_btn.dart';
+import '../../../widget/country_dropdown_field.dart';
 import '../../../widget/custom_dropdown.dart';
 import '../../../widget/custom_text_field.dart';
 import '../provider/cart_provider.dart';
@@ -128,15 +129,10 @@ void showCustomBottomSheet(BuildContext context) {
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                                      child: CustomTextField(
+                                      child: CountryDropdownField(
                                         height: 65,
-                                        labelText: 'Country',
-                                        onSave: (value) {},
                                         controller:
                                             cartProvider.countryController,
-                                        validator: (value) => value!.isEmpty
-                                            ? 'Please enter a country'
-                                            : null,
                                       ),
                                     ),
                                   ],

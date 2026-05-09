@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/user.dart';
@@ -14,8 +15,15 @@ import '../utility/constants.dart';
 
 class HttpService extends GetConnect {
   static final GetStorage _box = GetStorage();
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const Uuid _uuid = Uuid();
   static const String _clientType = 'mobile_client';
+  static const Set<String> _secureKeys = {
+    TOKEN,
+    REFRESH_TOKEN,
+    TOKEN_TYPE,
+    ACCESS_TOKEN_EXPIRES_IN,
+  };
   static const Set<String> _sensitiveKeys = {
     'password',
     'token',
@@ -33,6 +41,7 @@ class HttpService extends GetConnect {
   static Completer<bool>? _refreshCompleter;
   static bool _isRedirectingToLogin = false;
   static String? _lastKnownRouteName;
+  static final Map<String, String> _secureCache = {};
 
   @override
   void onInit() {
@@ -146,14 +155,22 @@ class HttpService extends GetConnect {
         endpoint.contains('order') ||
         endpoint.contains('cart') ||
         endpoint.contains('review') ||
-        endpoint == 'users/login' ||
         endpoint == 'users/logout' ||
         endpoint == 'users/refresh-token';
   }
 
+  bool _isExpectedAuthClientError(String endpointUrl, int statusCode) {
+    final endpoint = _normalizeEndpoint(endpointUrl).toLowerCase();
+    final isAuthFormEndpoint =
+        endpoint == 'users/login' || endpoint == 'users/register';
+    return isAuthFormEndpoint &&
+        (statusCode == 400 || statusCode == 401 || statusCode == 403);
+  }
+
   bool _shouldCaptureApiError(String endpointUrl, int statusCode) {
     if (statusCode >= 500) return true;
-    if (statusCode == 401) return true;
+    if (_isExpectedAuthClientError(endpointUrl, statusCode)) return false;
+    if (statusCode == 401 && !_isAuthFreeEndpoint(endpointUrl)) return true;
     return _isCriticalEndpoint(endpointUrl) && statusCode >= 400;
   }
 
@@ -220,6 +237,10 @@ class HttpService extends GetConnect {
   }
 
   static String? _readString(String key) {
+    if (_secureKeys.contains(key)) {
+      return _secureCache[key];
+    }
+
     final value = _box.read(key);
     if (value == null) return null;
     final str = value.toString().trim();
@@ -227,6 +248,56 @@ class HttpService extends GetConnect {
       return null;
     }
     return str;
+  }
+
+  static Future<String?> _readSecureString(String key) async {
+    if (!_secureKeys.contains(key)) return _readString(key);
+
+    final cached = _secureCache[key];
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    var value = await _secureStorage.read(key: key);
+    value ??= _box.read(key)?.toString();
+    final normalized = _normalizeStoredString(value);
+    if (normalized == null) return null;
+
+    _secureCache[key] = normalized;
+    await _secureStorage.write(key: key, value: normalized);
+    await _box.remove(key);
+    return normalized;
+  }
+
+  static String? _normalizeStoredString(String? value) {
+    final str = value?.trim();
+    if (str == null || str.isEmpty || str == 'null' || str == 'undefined') {
+      return null;
+    }
+    return str;
+  }
+
+  static Future<void> _writeSecureString(String key, String? value) async {
+    final normalized = _normalizeStoredString(value);
+    if (normalized == null) return;
+
+    _secureCache[key] = normalized;
+    await _secureStorage.write(key: key, value: normalized);
+    await _box.remove(key);
+  }
+
+  static Future<void> _deleteSecureString(String key) async {
+    _secureCache.remove(key);
+    await _secureStorage.delete(key: key);
+    await _box.remove(key);
+  }
+
+  static Future<void> _loadAuthCache() async {
+    for (final key in _secureKeys) {
+      await _readSecureString(key);
+    }
+  }
+
+  static String? readStoredToken(String key) {
+    return _readString(key);
   }
 
   static bool _storedRefreshTokenChanged(String previousRefreshToken) {
@@ -342,16 +413,19 @@ class HttpService extends GetConnect {
 
   static Future<void> persistAuthSession(User user) async {
     if ((user.accessToken ?? '').isNotEmpty) {
-      await _box.write(TOKEN, user.accessToken);
+      await _writeSecureString(TOKEN, user.accessToken);
     }
     if ((user.refreshToken ?? '').isNotEmpty) {
-      await _box.write(REFRESH_TOKEN, user.refreshToken);
+      await _writeSecureString(REFRESH_TOKEN, user.refreshToken);
     }
     if ((user.tokenType ?? '').isNotEmpty) {
-      await _box.write(TOKEN_TYPE, user.tokenType);
+      await _writeSecureString(TOKEN_TYPE, user.tokenType);
     }
     if ((user.accessTokenExpiresIn ?? '').isNotEmpty) {
-      await _box.write(ACCESS_TOKEN_EXPIRES_IN, user.accessTokenExpiresIn);
+      await _writeSecureString(
+        ACCESS_TOKEN_EXPIRES_IN,
+        user.accessTokenExpiresIn,
+      );
     }
 
     final storedUserRaw = _box.read(USER_INFO_BOX);
@@ -383,15 +457,15 @@ class HttpService extends GetConnect {
       iV: user.iV ?? storedUser?.iV,
     );
 
-    await _box.write(USER_INFO_BOX, mergedUser.toJson());
+    await _box.write(USER_INFO_BOX, mergedUser.toJson(includeTokens: false));
     await setSentryUser(mergedUser);
   }
 
   static Future<void> clearAuthSession({bool clearAddress = false}) async {
-    await _box.remove(TOKEN);
-    await _box.remove(REFRESH_TOKEN);
-    await _box.remove(TOKEN_TYPE);
-    await _box.remove(ACCESS_TOKEN_EXPIRES_IN);
+    await _deleteSecureString(TOKEN);
+    await _deleteSecureString(REFRESH_TOKEN);
+    await _deleteSecureString(TOKEN_TYPE);
+    await _deleteSecureString(ACCESS_TOKEN_EXPIRES_IN);
     await _box.remove(USER_INFO_BOX);
 
     if (clearAddress) {
@@ -422,6 +496,7 @@ class HttpService extends GetConnect {
   }
 
   static Future<bool> bootstrapSession() async {
+    await _loadAuthCache();
     final accessToken = _readString(TOKEN);
     final refreshToken = _readString(REFRESH_TOKEN);
 

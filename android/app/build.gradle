@@ -11,7 +11,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.sinasys.e_commerce_flutter"
+    namespace "com.levanquang.qmarket"
     compileSdk 36
     ndkVersion "27.0.12077973"
 
@@ -25,7 +25,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.sinasys.e_commerce_flutter"
+        applicationId "com.levanquang.qmarket"
         minSdkVersion flutter.minSdkVersion
         targetSdk 35
         versionCode flutter.versionCode

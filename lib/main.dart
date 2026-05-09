@@ -38,7 +38,7 @@ Future<void> main() async {
       options.dsn = sentryDsn;
       options.environment = sentryEnvironment;
       options.release = release;
-      options.sendDefaultPii = true;
+      options.sendDefaultPii = false;
       options.tracesSampleRate = isProduction ? 0.1 : 1.0;
       options.profilesSampleRate = isProduction ? 0.0 : 1.0;
     },

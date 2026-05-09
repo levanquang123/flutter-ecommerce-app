@@ -17,7 +17,7 @@ class User {
   final String? updatedAt;
   final int? iV;
 
-   User({
+  User({
     this.sId,
     this.email,
     this.password,
@@ -48,47 +48,58 @@ class User {
       password: userData['password']?.toString(),
       googleId: userData['googleId']?.toString(),
       role: userData['role']?.toString(),
-
-      accessToken: (json['accessToken'] ?? json['token'] ?? userData['accessToken'] ?? userData['token'])?.toString(),
+      accessToken: (json['accessToken'] ??
+              json['token'] ??
+              userData['accessToken'] ??
+              userData['token'])
+          ?.toString(),
       address: userData['address'] is Map<String, dynamic>
           ? Address.fromJson(userData['address'])
           : null,
-
       favorites: userData['favorites'] != null && userData['favorites'] is List
           ? List<Product>.from((userData['favorites'] as List).map((x) {
-        if (x is Map<String, dynamic>) {
-          return Product.fromJson(x);
-        } else {
-          return Product(sId: x.toString());
-        }
-      }))
+              if (x is Map<String, dynamic>) {
+                return Product.fromJson(x);
+              } else {
+                return Product(sId: x.toString());
+              }
+            }))
           : [],
-
-      refreshToken: (json['refreshToken'] ?? userData['refreshToken'])?.toString(),
+      refreshToken:
+          (json['refreshToken'] ?? userData['refreshToken'])?.toString(),
       tokenType: (json['tokenType'] ?? userData['tokenType'])?.toString(),
-      accessTokenExpiresIn: (json['accessTokenExpiresIn'] ?? userData['accessTokenExpiresIn'])?.toString(),
+      accessTokenExpiresIn:
+          (json['accessTokenExpiresIn'] ?? userData['accessTokenExpiresIn'])
+              ?.toString(),
       createdAt: userData['createdAt']?.toString(),
       updatedAt: userData['updatedAt']?.toString(),
       iV: userData['__v'] is int ? userData['__v'] : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toJson({bool includeTokens = true}) {
+    final json = {
       '_id': sId,
       'email': email,
       'googleId': googleId,
       'favorites': favorites?.map((e) => e.toJson()).toList() ?? [],
       'role': role,
       'address': address?.toJson(),
-      'token': accessToken,
-      'accessToken': accessToken,
-      'refreshToken': refreshToken,
-      'tokenType': tokenType,
-      'accessTokenExpiresIn': accessTokenExpiresIn,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       '__v': iV,
     };
+
+    if (includeTokens) {
+      json.addAll({
+        'token': accessToken,
+        'accessToken': accessToken,
+        'refreshToken': refreshToken,
+        'tokenType': tokenType,
+        'accessTokenExpiresIn': accessTokenExpiresIn,
+      });
+    }
+
+    return json;
   }
 }

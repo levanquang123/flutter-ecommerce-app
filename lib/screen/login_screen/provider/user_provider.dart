@@ -26,14 +26,7 @@ class UserProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
 
   String? _readToken(String key) {
-    final value = box.read(key);
-    if (value == null) return null;
-
-    final token = value.toString().trim();
-    if (token.isEmpty || token == 'null' || token == 'undefined') {
-      return null;
-    }
-    return token;
+    return HttpService.readStoredToken(key);
   }
 
   Future<String?> login(LoginData data) async {
