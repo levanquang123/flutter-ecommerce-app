@@ -4,6 +4,8 @@ param(
 
   [string]$DefinesFile = "config/dart_defines/prod.local.json",
 
+  [string]$SentryPropertiesFile = "config/sentry/prod.local.properties",
+
   [string]$SymbolsDir = "build/sentry-debug-info"
 )
 
@@ -14,6 +16,26 @@ Set-Location $RepoRoot
 
 if (-not (Test-Path -LiteralPath $DefinesFile)) {
   throw "Missing $DefinesFile. Copy config/dart_defines/prod.example.json to $DefinesFile and fill the production values."
+}
+
+if (Test-Path -LiteralPath $SentryPropertiesFile) {
+  Get-Content -LiteralPath $SentryPropertiesFile | ForEach-Object {
+    $Line = $_.Trim()
+    if ($Line -eq "" -or $Line.StartsWith("#")) {
+      return
+    }
+
+    $Parts = $Line.Split("=", 2)
+    if ($Parts.Count -ne 2) {
+      return
+    }
+
+    $Name = $Parts[0].Trim()
+    $Value = $Parts[1].Trim()
+    if ($Name -and $Value) {
+      [System.Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+    }
+  }
 }
 
 $VersionLine = Get-Content -Path "pubspec.yaml" | Select-String -Pattern "^version:\s*(.+)$" | Select-Object -First 1
@@ -42,7 +64,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $CanUploadSentryFiles = $env:SENTRY_AUTH_TOKEN -and $env:SENTRY_ORG -and $env:SENTRY_PROJECT
 if (-not $CanUploadSentryFiles) {
-  Write-Host "Skipping Sentry debug file upload. Set SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT to enable it."
+  Write-Host "Skipping Sentry debug file upload. Copy config/sentry/prod.example.properties to $SentryPropertiesFile and fill SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT to enable it."
   exit 0
 }
 

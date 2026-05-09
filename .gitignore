@@ -50,6 +50,7 @@ app.*.map.json
 
 # Local build configuration
 config/dart_defines/*.local.json
+config/sentry/*.local.properties
 
 # Android build artifacts
 /android/app/debug
