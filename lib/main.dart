@@ -3,7 +3,6 @@ import 'dart:ui' show PlatformDispatcher, PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -11,6 +10,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/data/data_provider.dart';
 import 'models/user.dart';
 import 'services/http_services.dart';
+import 'services/push_notification_service.dart';
 import 'screen/home_screen.dart';
 import 'screen/login_screen/login_screen.dart';
 import 'screen/login_screen/provider/user_provider.dart';
@@ -80,8 +80,7 @@ Future<void> main() async {
             GetStorage.init(),
           ]);
 
-          OneSignal.initialize(ONE_SIGNAL_APP_ID);
-          OneSignal.Notifications.requestPermission(true);
+          await PushNotificationService.initialize();
 
           final bool isAuthenticated = await HttpService.bootstrapSession();
 
@@ -94,6 +93,11 @@ Future<void> main() async {
           }
           if (!isAuthenticated) {
             loginUser = null;
+          }
+          if (loginUser == null) {
+            await PushNotificationService.clearUser();
+          } else {
+            await PushNotificationService.identifyUser(loginUser);
           }
           await HttpService.setSentryUser(loginUser);
 

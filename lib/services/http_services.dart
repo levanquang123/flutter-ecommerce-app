@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../models/user.dart';
 import '../screen/login_screen/login_screen.dart';
 import '../utility/constants.dart';
+import 'push_notification_service.dart';
 
 class HttpService extends GetConnect {
   static final GetStorage _box = GetStorage();
@@ -459,6 +460,7 @@ class HttpService extends GetConnect {
 
     await _box.write(USER_INFO_BOX, mergedUser.toJson(includeTokens: false));
     await setSentryUser(mergedUser);
+    await PushNotificationService.identifyUser(mergedUser);
   }
 
   static Future<void> clearAuthSession({bool clearAddress = false}) async {
@@ -478,6 +480,7 @@ class HttpService extends GetConnect {
     }
 
     await setSentryUser(null);
+    await PushNotificationService.clearUser();
   }
 
   static Future<void> handleSessionExpired(
