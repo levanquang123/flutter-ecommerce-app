@@ -1,98 +1,178 @@
-## flutter_ecommerce_app
+# QMarket Mobile Client
 
-<p align="center">
-  <img src="https://img.shields.io/github/stars/SinaSys/flutter_ecommerce_app">
-  <img src="https://img.shields.io/github/forks/SinaSys/flutter_ecommerce_app">
-  <img src="https://img.shields.io/github/actions/workflow/status/SinaSys/flutter_ecommerce_app/main.yml?branch=master&label=CI%20&logo=github">
-  <img src="https://img.shields.io/github/v/release/SinaSys/flutter_ecommerce_app?label=Release&logo=semantic-release">
-  <img src="https://img.shields.io/github/last-commit/SinaSys/flutter_ecommerce_app?label=Last%20commit">
-</p>
+Flutter mobile shopping app for QMarket. The app talks to the production API at `https://api.levanquang.com`, supports email verification during registration, authenticated shopping flows, cart/checkout, orders, reviews, push notifications, Stripe payments, and Sentry crash reporting.
 
+## Requirements
 
+- Flutter SDK installed and available in `PATH`
+- Android Studio or Android SDK command-line tools
+- Java/Gradle toolchain compatible with the current Flutter Android setup
+- A configured production API
 
-E-Commerce app is a design implementation of [E-commerce App](https://dribbble.com/shots/15550702-E-commerce-Mobile-App) designed by [Billah](https://dribbble.com/designermasum)
+Check the Flutter environment:
 
-![](https://github.com/SinaSys/flutter_ecommerce_app/blob/master/screenshots/screenshot.png?raw=true)
-
-
-## Screenshots
-
-Preview                    |   Home screen             |  Product Detail Screen    |  Cart Screen
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![](https://github.com/SinaSys/flutter_ecommerce_app/blob/master/screenshots/preview.gif?raw=true)|![](https://github.com/SinaSys/flutter_ecommerce_app/blob/master/screenshots/home_screen.png?raw=true)|![](https://github.com/SinaSys/flutter_ecommerce_app/blob/master/screenshots/detail_screen.png?raw=true)|![](https://github.com/SinaSys/flutter_ecommerce_app/blob/master/screenshots/cart_screen.png?raw=true)
-
-<br/>
-
-## Directory Structure
-```
-📂lib
- │───main.dart  
- │───📂core  
- |   │──app_data.dart
- |   │──app_theme.dart
- |   │──app_color.dart
- |   └──extensions.dart
- └───📂src
-     │────📂model
-     │    │──product.dart
-     |    │──product_category.dart
-     |    │──product_size_type.dart
-     |    │──recommended_product.dart
-     |    │──categorical.dart
-     |    │──numerical.dart
-     |    └──bottom_navy_bar_item.dart
-     └────📂view
-     |    │───📂screen
-     |    |   |──home_screen.dart
-     |    |   |──product_list_screen.dart
-     |    |   |──product_detail_screen.dart
-     |    |   |──favorite_screen.dart
-     |    |   |──cart_screen.dart
-     |    |   └──profile_screen.dart
-     |    │───📂widget
-     |    |   |──carousel_slider.dart
-     |    |   |──product_grid_view.dart
-     |    |   |──list_item_selector.dart
-     |    |   └──empty_cart.dart
-     |    |   └──page_wrapper.dart
-     |    └───📂animation
-     |        |──animated_switcher_wrapper.dart
-     |        └──open_container_wrapper.dart
-     └────📂controller
-          └──product_controller.dart
+```powershell
+flutter doctor
 ```
 
-<br/>
+Install dependencies:
 
-## Dependencies
-Package Name        |
-:-------------------------|
-|[GetX](https://pub.dev/packages/get) 
-|[bottom_navy_bar](https://pub.dev/packages/bottom_navy_bar) 
-|[smooth_page_indicator](https://pub.dev/packages/smooth_page_indicator)
-|[flutter_rating_bar](https://pub.dev/packages/flutter_rating_bar)
-|[font_awesome_flutter](https://pub.dev/packages/font_awesome_flutter)
-|[animations](https://pub.dev/packages/animations)
-|[flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons)
+```powershell
+flutter pub get
+```
 
-<br/>
+## Configuration
 
-## Created & Maintained By
+Production builds read Dart defines from:
 
-[SinaSys](https://github.com/SinaSys) 
+```text
+config/dart_defines/prod.local.json
+```
 
+Create it from the example file:
 
-## Contributors
-• [mufarrah](https://github.com/mufarrah)
-<br/>
-<br/>
+```powershell
+Copy-Item config/dart_defines/prod.example.json config/dart_defines/prod.local.json
+```
 
-##  Other flutter projects
- Project Name        |Stars        
-:-------------------------|-------------------------
-[Go rest app](https://github.com/SinaSys/flutter_go_rest_app)|![GitHub stars](https://img.shields.io/github/stars/SinaSys/flutter_go_rest_app?style=social)
-[Japanese restaurant app](https://github.com/SinaSys/flutter_japanese_restaurant_app)| ![GitHub stars](https://img.shields.io/github/stars/SinaSys/flutter_japanese_restaurant_app?style=social)
-|[Office furniture store app](https://github.com/SinaSys/flutter_office_furniture_store_app) |![GitHub stars](https://img.shields.io/github/stars/SinaSys/flutter_office_furniture_store_app?style=social)
+Example:
 
+```json
+{
+  "SENTRY_ENV": "production",
+  "SENTRY_DSN": "https://your-public-key@o0000000000000000.ingest.us.sentry.io/0000000000000000",
+  "MAIN_URL": "https://api.levanquang.com"
+}
+```
 
+`prod.local.json` is local/private and should not be committed.
 
+## API Notes
+
+The mobile app uses:
+
+- `POST /users/register` to start signup and request a verification code.
+- `POST /users/verify-email` to verify the 6-digit code.
+- `POST /users/login` for verified accounts.
+- `POST /users/resend-verification-code` to send another code.
+
+Email delivery is handled by the backend, not the Flutter client. In production, the backend should prefer Brevo Transactional API with:
+
+```env
+BREVO_API_KEY=xkeysib-...
+EMAIL_FROM=QMarket <no-reply@levanquang.com>
+```
+
+You can confirm the live API is healthy at:
+
+```text
+https://api.levanquang.com/health
+```
+
+Expected production health response:
+
+```json
+{
+  "success": true,
+  "service": "store_api",
+  "status": "ok",
+  "environment": "production"
+}
+```
+
+## Run Locally
+
+Run against the API configured in your local defines file:
+
+```powershell
+flutter run --dart-define-from-file=config/dart_defines/prod.local.json
+```
+
+For a specific device:
+
+```powershell
+flutter devices
+flutter run -d <device-id> --dart-define-from-file=config/dart_defines/prod.local.json
+```
+
+## Build Android Production
+
+Use the helper script:
+
+```powershell
+.\scripts\build_android_prod.ps1
+```
+
+Default output:
+
+```text
+build\app\outputs\bundle\release\app-release.aab
+```
+
+Build an APK instead:
+
+```powershell
+.\scripts\build_android_prod.ps1 -Target apk
+```
+
+The script:
+
+- Requires `config/dart_defines/prod.local.json`.
+- Builds with `--release`.
+- Passes `--dart-define-from-file`.
+- Writes split debug info to `build/sentry-debug-info`.
+- Uploads Sentry debug files when Sentry upload env vars are configured.
+
+## Sentry Debug Upload
+
+Optional Sentry upload configuration is read from:
+
+```text
+config/sentry/prod.local.properties
+```
+
+Create it from:
+
+```powershell
+Copy-Item config/sentry/prod.example.properties config/sentry/prod.local.properties
+```
+
+The upload step needs:
+
+```properties
+SENTRY_AUTH_TOKEN=...
+SENTRY_ORG=...
+SENTRY_PROJECT=...
+```
+
+If those values are missing, the app still builds; the script only skips the Sentry debug file upload.
+
+## Useful Checks
+
+Analyze code:
+
+```powershell
+flutter analyze
+```
+
+Run tests:
+
+```powershell
+flutter test
+```
+
+Check outdated packages:
+
+```powershell
+flutter pub outdated
+```
+
+Dependency update warnings during build are informational unless the build fails.
+
+## Release Checklist
+
+1. Confirm `MAIN_URL` in `prod.local.json` points to `https://api.levanquang.com`.
+2. Confirm API health returns `success: true` and `status: "ok"`.
+3. Run `flutter test` or at least the focused checks you need.
+4. Run `.\scripts\build_android_prod.ps1`.
+5. Upload `build\app\outputs\bundle\release\app-release.aab` to Google Play Console.
