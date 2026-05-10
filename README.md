@@ -190,6 +190,7 @@ The script:
 
 - Requires `config/dart_defines/prod.local.json`.
 - Builds release with `--dart-define-from-file`.
+- Targets Android ARM/ARM64 by default for production Play Store bundles.
 - Writes split debug info to `build/sentry-debug-info`.
 - Uploads Sentry debug files when Sentry upload configuration is available.
 

@@ -6,7 +6,9 @@ param(
 
   [string]$SentryPropertiesFile = "config/sentry/prod.local.properties",
 
-  [string]$SymbolsDir = "build/sentry-debug-info"
+  [string]$SymbolsDir = "build/sentry-debug-info",
+
+  [string]$TargetPlatform = "android-arm,android-arm64"
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,6 +55,7 @@ $flutterArgs = @(
   "build",
   $Target,
   "--release",
+  "--target-platform=$TargetPlatform",
   "--split-debug-info=$SymbolsDir",
   "--dart-define-from-file=$DefinesFile"
 )
