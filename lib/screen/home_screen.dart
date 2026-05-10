@@ -23,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int newIndex = 0;
   bool _isRefreshingHomeCatalog = false;
   Timer? _homeCatalogRefreshTimer;
+  DateTime? _lastPausedAt;
+
+  static const Duration _resumeRefreshDelay = Duration(milliseconds: 700);
+  static const Duration _minimumBackgroundRefreshAge = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -50,8 +54,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _lastPausedAt = DateTime.now();
+      return;
+    }
+
     if (state == AppLifecycleState.resumed && newIndex == 0) {
-      _refreshHomeCatalog(force: true);
+      final pausedAt = _lastPausedAt;
+      if (pausedAt != null &&
+          DateTime.now().difference(pausedAt) < _minimumBackgroundRefreshAge) {
+        return;
+      }
+
+      Future<void>.delayed(_resumeRefreshDelay, () {
+        if (mounted && newIndex == 0) {
+          _refreshHomeCatalog(force: true);
+        }
+      });
     }
   }
 

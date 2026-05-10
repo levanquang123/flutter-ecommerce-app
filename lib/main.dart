@@ -41,6 +41,7 @@ Future<void> main() async {
       options.release = release;
       options.dist = dist;
       options.sendDefaultPii = false;
+      options.enableTombstone = true;
       options.tracesSampleRate = isProduction ? 0.1 : 1.0;
       options.profilesSampleRate = isProduction ? 0.0 : 1.0;
     },

@@ -7,6 +7,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/user.dart';
@@ -43,6 +44,7 @@ class HttpService extends GetConnect {
   static bool _isRedirectingToLogin = false;
   static String? _lastKnownRouteName;
   static final Map<String, String> _secureCache = {};
+  static bool _authStorageWasReset = false;
 
   @override
   void onInit() {
@@ -160,6 +162,24 @@ class HttpService extends GetConnect {
         endpoint == 'users/refresh-token';
   }
 
+  bool _isCatalogEndpoint(String endpointUrl) {
+    final endpoint = _normalizeEndpoint(endpointUrl).toLowerCase();
+    return endpoint == 'categories' ||
+        endpoint == 'subcategories' ||
+        endpoint == 'brands' ||
+        endpoint == 'products' ||
+        endpoint == 'posters';
+  }
+
+  bool _isTransientNetworkStatus(int statusCode) {
+    return statusCode == 408 ||
+        statusCode == 429 ||
+        statusCode == 500 ||
+        statusCode == 502 ||
+        statusCode == 503 ||
+        statusCode == 504;
+  }
+
   bool _isExpectedAuthClientError(String endpointUrl, int statusCode) {
     final endpoint = _normalizeEndpoint(endpointUrl).toLowerCase();
     final isAuthFormEndpoint =
@@ -169,6 +189,10 @@ class HttpService extends GetConnect {
   }
 
   bool _shouldCaptureApiError(String endpointUrl, int statusCode) {
+    if (_isCatalogEndpoint(endpointUrl) &&
+        _isTransientNetworkStatus(statusCode)) {
+      return false;
+    }
     if (statusCode >= 500) return true;
     if (_isExpectedAuthClientError(endpointUrl, statusCode)) return false;
     if (statusCode == 401 && !_isAuthFreeEndpoint(endpointUrl)) return true;
@@ -257,7 +281,15 @@ class HttpService extends GetConnect {
     final cached = _secureCache[key];
     if (cached != null && cached.isNotEmpty) return cached;
 
-    var value = await _secureStorage.read(key: key);
+    String? value;
+    try {
+      value = await _secureStorage.read(key: key);
+    } on PlatformException catch (e, stackTrace) {
+      if (!_isSecureStorageDecryptError(e)) rethrow;
+      await _handleSecureStorageDecryptError(e, stackTrace);
+      return null;
+    }
+
     value ??= _box.read(key)?.toString();
     final normalized = _normalizeStoredString(value);
     if (normalized == null) return null;
@@ -266,6 +298,66 @@ class HttpService extends GetConnect {
     await _secureStorage.write(key: key, value: normalized);
     await _box.remove(key);
     return normalized;
+  }
+
+  static bool _isSecureStorageDecryptError(PlatformException exception) {
+    final raw = [
+      exception.code,
+      exception.message,
+      exception.details,
+    ].whereType<Object>().join(' ').toLowerCase();
+
+    return raw.contains('bad_decrypt') ||
+        raw.contains('badpaddingexception') ||
+        raw.contains('bad padding') ||
+        raw.contains('failed to unwrap key') ||
+        raw.contains('invalidkeyexception') ||
+        raw.contains('keystore');
+  }
+
+  static Future<void> _handleSecureStorageDecryptError(
+    PlatformException exception,
+    StackTrace stackTrace,
+  ) async {
+    await Sentry.addBreadcrumb(
+      Breadcrumb(
+        type: 'auth',
+        category: 'auth.secure_storage',
+        level: SentryLevel.warning,
+        message: 'Secure storage could not decrypt existing auth data',
+      ),
+    );
+
+    await Sentry.captureException(
+      exception,
+      stackTrace: stackTrace,
+      withScope: (scope) {
+        scope.level = SentryLevel.warning;
+        scope.setTag('service', 'mobile-client');
+        scope.setTag('client_type', _clientType);
+        scope.setTag('auth_storage_reset', 'true');
+      },
+    );
+
+    await _resetCorruptedAuthStorage();
+  }
+
+  static Future<void> _resetCorruptedAuthStorage() async {
+    _authStorageWasReset = true;
+    _secureCache.clear();
+
+    try {
+      await _secureStorage.deleteAll();
+    } on PlatformException catch (e) {
+      log('[AUTH] secure storage deleteAll failed after decrypt error: $e');
+    }
+
+    for (final key in _secureKeys) {
+      await _box.remove(key);
+    }
+    await _box.remove(USER_INFO_BOX);
+    await setSentryUser(null);
+    await PushNotificationService.clearUser();
   }
 
   static String? _normalizeStoredString(String? value) {
@@ -292,8 +384,12 @@ class HttpService extends GetConnect {
   }
 
   static Future<void> _loadAuthCache() async {
+    _authStorageWasReset = false;
     for (final key in _secureKeys) {
       await _readSecureString(key);
+      if (_authStorageWasReset) {
+        break;
+      }
     }
   }
 
