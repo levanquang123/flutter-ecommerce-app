@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-
-
+import 'package:flutter/material.dart';
 
 class OpenContainerWrapper extends StatelessWidget {
   const OpenContainerWrapper({
@@ -21,7 +19,7 @@ class OpenContainerWrapper extends StatelessWidget {
       ),
       closedColor: const Color(0xFFE5E6E8),
       transitionType: ContainerTransitionType.fade,
-      transitionDuration: const Duration(milliseconds: 850),
+      transitionDuration: const Duration(milliseconds: 260),
       closedBuilder: (_, VoidCallback openContainer) {
         return InkWell(onTap: openContainer, child: child);
       },

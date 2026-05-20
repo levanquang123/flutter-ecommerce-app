@@ -184,6 +184,12 @@ class HttpService extends GetConnect {
     final endpoint = _normalizeEndpoint(endpointUrl).toLowerCase();
     final isAuthFormEndpoint =
         endpoint == 'users/login' || endpoint == 'users/register';
+    final isLogoutEndpoint = endpoint == 'users/logout';
+
+    if (isLogoutEndpoint && statusCode == 401) {
+      return true;
+    }
+
     return isAuthFormEndpoint &&
         (statusCode == 400 || statusCode == 401 || statusCode == 403);
   }

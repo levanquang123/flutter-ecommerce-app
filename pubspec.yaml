@@ -2,7 +2,7 @@ name: e_commerce_flutter
 description: E-Commerce App built in flutter using GetX
 publish_to: 'none'
 
-version: 1.0.0+9
+version: 1.0.0+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
