@@ -1,5 +1,6 @@
 import '../../../core/data/data_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../../../../utility/app_data.dart';
 import '../../coming_soon_screen.dart';
@@ -91,17 +92,13 @@ class _PosterCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ComingSoonScreen(
+                      Get.to(() => const ComingSoonScreen(
                             title: 'Offer coming soon',
                             message:
                                 'This promotion is being prepared. Please check back later.',
                             icon: Icons.local_offer_outlined,
                             primaryActionText: 'Back to home',
-                          ),
-                        ),
-                      );
+                          ));
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,

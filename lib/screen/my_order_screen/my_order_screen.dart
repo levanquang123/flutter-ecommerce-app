@@ -60,18 +60,16 @@ class _MyOrderScreenState extends State<MyOrderScreen> {
         dataProvider.allProducts.where((p) => p.sId == productId);
     final product = matchedProduct.isNotEmpty ? matchedProduct.first : null;
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ProductReviewScreen(
-          productId: productId,
-          productName: item.productName ?? '',
-          initialSummary:
-              product?.reviewSummary ?? const ProductReviewSummary(),
-          preferredOrderId: order.sId,
-          preferredOrderItemId: item.sId,
-          initialRating: star,
-          autoOpenComposer: true,
-        ),
+    await Get.to(
+      () => ProductReviewScreen(
+        productId: productId,
+        productName: item.productName ?? '',
+        initialSummary:
+            product?.reviewSummary ?? const ProductReviewSummary(),
+        preferredOrderId: order.sId,
+        preferredOrderItemId: item.sId,
+        initialRating: star,
+        autoOpenComposer: true,
       ),
     );
 

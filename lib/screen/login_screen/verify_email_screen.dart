@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:e_commerce_flutter/utility/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../../utility/app_color.dart';
 import '../../widget/page_wrapper.dart';
@@ -80,10 +81,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
+    Get.offAll(() => const LoginScreen());
   }
 
   Future<void> _resend() async {

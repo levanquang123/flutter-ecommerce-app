@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../utility/app_color.dart';
 
 class NavigationTile extends StatelessWidget {
@@ -14,34 +13,42 @@ class NavigationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 5),
-      child: Material(
-        color: AppColor.lightGrey,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: AppColor.darkOrange,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 30, color: Colors.white),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black87),
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios, color: Colors.black87),
-            ],
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColor.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColor.primaryLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 24, color: AppColor.primary),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right_rounded, 
+            color: AppColor.textSecondary,
+            size: 20,
+          ),
+        ],
       ),
     );
   }

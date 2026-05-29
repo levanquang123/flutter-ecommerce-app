@@ -3,6 +3,7 @@ import 'package:e_commerce_flutter/utility/extensions.dart';
 import '../../utility/app_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_login/flutter_login.dart';
+import 'package:get/get.dart';
 import '../home_screen.dart';
 import 'verify_email_screen.dart';
 
@@ -22,11 +23,7 @@ class LoginScreen extends StatelessWidget {
         if (error == null && context.mounted) {
           final pendingEmail = context.userProvider.pendingVerificationEmail;
           if (pendingEmail != null && pendingEmail.isNotEmpty) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (context) {
-                return VerifyEmailScreen(email: pendingEmail);
-              },
-            ));
+            Get.off(() => VerifyEmailScreen(email: pendingEmail));
           }
         }
         return error;
@@ -35,35 +32,19 @@ class LoginScreen extends StatelessWidget {
         final pendingEmail = context.userProvider.pendingVerificationEmail;
         final user = context.userProvider.getLoginUsr();
         if (pendingEmail != null && pendingEmail.isNotEmpty) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) {
-              return VerifyEmailScreen(email: pendingEmail);
-            },
-          ));
+          Get.off(() => VerifyEmailScreen(email: pendingEmail));
           return;
         }
 
         if (user?.emailVerified == false && (user?.email ?? '').isNotEmpty) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) {
-              return VerifyEmailScreen(email: user!.email!);
-            },
-          ));
+          Get.off(() => VerifyEmailScreen(email: user!.email!));
           return;
         }
 
         if (context.userProvider.getLoginUsr()?.sId != null) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) {
-              return const HomeScreen();
-            },
-          ));
+          Get.off(() => const HomeScreen());
         } else {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) {
-              return const LoginScreen();
-            },
-          ));
+          Get.off(() => const LoginScreen());
         }
       },
       onRecoverPassword: (_) => null,

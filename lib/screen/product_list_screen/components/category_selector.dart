@@ -13,6 +13,11 @@ class CategorySelector extends StatelessWidget {
     required this.categories,
   });
 
+  String _capitalizeName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -54,7 +59,7 @@ class CategorySelector extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    category.name ?? '',
+                    _capitalizeName(category.name),
                     maxLines: 1,
                     textAlign: TextAlign.center,
                     style: TextStyle(

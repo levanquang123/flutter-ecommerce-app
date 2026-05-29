@@ -1,5 +1,6 @@
 import 'package:e_commerce_flutter/utility/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/data/data_provider.dart';
@@ -139,15 +140,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             summary: product.reviewSummary,
                             onTap: () {
                               if ((product.sId ?? '').isEmpty) return;
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ProductReviewScreen(
+                              Get.to(() => ProductReviewScreen(
                                     productId: product.sId ?? '',
                                     productName: product.name ?? '',
                                     initialSummary: product.reviewSummary,
-                                  ),
-                                ),
-                              );
+                                  ));
                             },
                           ),
                           const SizedBox(height: 10),

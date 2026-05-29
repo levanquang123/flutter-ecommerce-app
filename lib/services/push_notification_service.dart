@@ -8,6 +8,7 @@ import '../utility/constants.dart';
 
 class PushNotificationService {
   static const Duration _oneSignalTimeout = Duration(seconds: 5);
+  static const String _loggedInTag = 'logged_in';
   static bool _isInitialized = false;
 
   static Future<void> initialize() async {
@@ -37,9 +38,14 @@ class PushNotificationService {
         _oneSignalTimeout,
         onTimeout: () => null,
       );
-      if (currentExternalId == externalId) return;
 
-      await OneSignal.login(externalId).timeout(_oneSignalTimeout);
+      if (currentExternalId != externalId) {
+        await OneSignal.login(externalId).timeout(_oneSignalTimeout);
+      }
+
+      await OneSignal.User.addTagWithKey(_loggedInTag, 'true').timeout(
+        _oneSignalTimeout,
+      );
     } catch (error) {
       log('OneSignal identify user error: $error');
     }
@@ -49,6 +55,8 @@ class PushNotificationService {
     if (!_isInitialized) return;
 
     try {
+      await OneSignal.User.removeTag(_loggedInTag).timeout(_oneSignalTimeout);
+
       final currentExternalId = await OneSignal.User.getExternalId().timeout(
         _oneSignalTimeout,
         onTimeout: () => null,

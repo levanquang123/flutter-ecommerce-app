@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
         body: PageTransitionSwitcher(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 400),
           transitionBuilder: (
             Widget child,
             Animation<double> animation,

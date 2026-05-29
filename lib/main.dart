@@ -220,6 +220,8 @@ class _MyAppState extends State<MyApp> {
         },
       ),
       debugShowCheckedModeBanner: false,
+      defaultTransition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
       navigatorObservers: [
         SentryNavigatorObserver(),
         AppRouteObserver(),

@@ -164,40 +164,7 @@ class CartListSection extends StatelessWidget {
                         ),
                         if (cartItem.variant.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          Container(
-                            constraints: const BoxConstraints(maxWidth: 210),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    cartItem.variant,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF555555),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  size: 16,
-                                  color: Color(0xFF777777),
-                                ),
-                              ],
-                            ),
-                          ),
+                          _VariantChip(cartItem: cartItem),
                         ],
                         const SizedBox(height: 10),
                         Row(
@@ -270,6 +237,85 @@ class CartListSection extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _VariantChip extends StatefulWidget {
+  final CartItem cartItem;
+
+  const _VariantChip({required this.cartItem});
+
+  @override
+  State<_VariantChip> createState() => _VariantChipState();
+}
+
+class _VariantChipState extends State<_VariantChip> {
+  static const int _collapsedLength = 24;
+  bool _isExpanded = false;
+
+  bool get _canExpand {
+    return widget.cartItem.attributes.length > 1 ||
+        widget.cartItem.variant.length > _collapsedLength;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canExpand = _canExpand;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: canExpand
+            ? () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              }
+            : null,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 210),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: _isExpanded
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  widget.cartItem.variant,
+                  maxLines: _isExpanded ? 3 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF555555),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (canExpand) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: const Color(0xFF777777),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

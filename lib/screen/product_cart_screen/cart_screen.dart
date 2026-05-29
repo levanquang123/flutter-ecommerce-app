@@ -32,11 +32,6 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: const Text(
           'My Cart',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColor.darkOrange,
-          ),
         ),
       ),
       body: Consumer<CartProvider>(

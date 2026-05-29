@@ -71,8 +71,8 @@ void showCustomBottomSheet(BuildContext context) {
                                 ),
                               ],
                             ),
-                            padding: const EdgeInsets.all(10),
-                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
                             child: Column(
                               children: [
                                 CustomTextField(
@@ -85,6 +85,7 @@ void showCustomBottomSheet(BuildContext context) {
                                       ? 'Please enter a phone number'
                                       : null,
                                 ),
+                                const SizedBox(height: 8),
                                 CustomTextField(
                                   height: 65,
                                   labelText: 'Street',
@@ -94,6 +95,7 @@ void showCustomBottomSheet(BuildContext context) {
                                       ? 'Please enter a street'
                                       : null,
                                 ),
+                                const SizedBox(height: 8),
                                 CustomTextField(
                                   height: 65,
                                   labelText: 'City',
@@ -103,6 +105,7 @@ void showCustomBottomSheet(BuildContext context) {
                                       ? 'Please enter a city'
                                       : null,
                                 ),
+                                const SizedBox(height: 8),
                                 CustomTextField(
                                   height: 65,
                                   labelText: 'State',
@@ -112,6 +115,7 @@ void showCustomBottomSheet(BuildContext context) {
                                       ? 'Please enter a state'
                                       : null,
                                 ),
+                                const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Expanded(
@@ -127,7 +131,7 @@ void showCustomBottomSheet(BuildContext context) {
                                             : null,
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: CountryDropdownField(
                                         height: 65,

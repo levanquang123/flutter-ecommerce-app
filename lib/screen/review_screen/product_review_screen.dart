@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/data/data_provider.dart';
@@ -116,9 +117,7 @@ class _ProductReviewBodyState extends State<_ProductReviewBody> {
       );
 
       if (toLogin == true && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+        Get.to(() => const LoginScreen());
       }
       return;
     }

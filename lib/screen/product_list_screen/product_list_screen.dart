@@ -4,6 +4,7 @@ import '../../screen/my_order_screen/my_order_screen.dart';
 import '../../utility/app_color.dart';
 import '../../utility/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'components/custom_app_bar.dart';
 import '../../../../widget/product_grid_view.dart';
@@ -20,9 +21,7 @@ class ProductListScreen extends StatelessWidget {
 
   void _openScreen(BuildContext context, Widget screen) {
     Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Get.to(() => screen);
   }
 
   void _openTab(BuildContext context, int index) {
@@ -64,9 +63,18 @@ class ProductListScreen extends StatelessWidget {
                   final hasProducts = dataProvider.products.isNotEmpty;
                   final user = context.userProvider.getLoginUsr();
                   final emailName = user?.email?.split('@').first.trim();
-                  final greetingName = (emailName == null || emailName.isEmpty)
+                  String greetingName = (emailName == null || emailName.isEmpty)
                       ? 'there'
                       : emailName;
+                  
+                  // Clean up name (capitalize first letter, handle numbers)
+                  if (greetingName != 'there') {
+                    greetingName = greetingName.replaceAll(RegExp(r'[0-9]'), '');
+                    if (greetingName.length > 1) {
+                      greetingName = greetingName[0].toUpperCase() + greetingName.substring(1);
+                    }
+                  }
+
                   if (dataProvider.isInitialLoading && !hasProducts) {
                     return const SizedBox(
                       height: 420,
@@ -90,6 +98,7 @@ class ProductListScreen extends StatelessWidget {
                         "Hello $greetingName",
                         style: Theme.of(context).textTheme.displayLarge,
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         "What are you looking for today?",
                         style: Theme.of(context).textTheme.headlineSmall,
