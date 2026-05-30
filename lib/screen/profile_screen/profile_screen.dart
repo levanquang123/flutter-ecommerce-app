@@ -101,24 +101,15 @@ class ProfileScreen extends StatelessWidget {
                 foregroundColor: Colors.grey,
                 textStyle: const TextStyle(fontSize: 14),
               ),
-              onPressed: () {
-                showDialog<void>(
-                  context: context,
-                  builder: (dialogContext) {
-                    return AlertDialog(
-                      title: const Text('Delete Account'),
-                      content: const Text(
-                        'To delete your account, please send an email to levanquang27122005@gmail.com. We will process your request within 72 hours.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          child: const Text('OK'),
-                        ),
-                      ],
-                    );
-                  },
-                );
+              onPressed: () async {
+                final url = Uri.parse('https://forms.gle/6ZL33pA9ZTdoyksy6');
+                try {
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                } catch (e) {
+                  debugPrint('Could not launch delete account url: $e');
+                }
               },
               child: const Text(
                 'Delete Account',
