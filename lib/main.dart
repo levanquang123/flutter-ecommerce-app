@@ -199,10 +199,13 @@ class _MyAppState extends State<MyApp> {
     await provider.initializeData();
 
     if (widget.isAuthenticated) {
-      await userProvider.fetchCurrentUserProfile();
-      profileProvider.fillControllersFromCurrentUser();
-      await cartProvider.loadCart();
-      await provider.getFavoriteProducts();
+      await Future.wait([
+        userProvider.fetchCurrentUserProfile().then((_) {
+          profileProvider.fillControllersFromCurrentUser();
+        }),
+        cartProvider.loadCart(),
+        provider.getFavoriteProducts(),
+      ]);
     }
   }
 
