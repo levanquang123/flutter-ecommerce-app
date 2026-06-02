@@ -2,7 +2,7 @@ name: e_commerce_flutter
 description: E-Commerce App built in flutter using GetX
 publish_to: 'none'
 
-version: 1.0.0+13
+version: 1.0.1+14
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -24,7 +24,7 @@ dependencies:
   flutter_secure_storage: ^8.1.0
   flutter_login: ^5.0.0
   webview_flutter: ^4.7.0
-  flutter_stripe: ^10.1.1
+  flutter_stripe: ^11.5.0
   onesignal_flutter: ^5.2.0
   sentry_flutter: ^9.20.0
   package_info_plus: ^10.1.0

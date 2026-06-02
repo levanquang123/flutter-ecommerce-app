@@ -6,21 +6,22 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../../../core/data/data_provider.dart';
-import '../../../models/api_response.dart';
 import '../../../models/user.dart';
 import '../../../services/http_services.dart';
 import '../../../utility/constants.dart';
 import '../../../utility/snack_bar_helper.dart';
+import '../data/auth_repository.dart';
 import '../login_screen.dart';
 
 class UserProvider extends ChangeNotifier {
-  final HttpService service = HttpService();
+  final AuthRepository _authRepository;
   final DataProvider _dataProvider;
   final GetStorage box = GetStorage();
   User? _currentUser;
   String? _pendingVerificationEmail;
 
-  UserProvider(this._dataProvider) {
+  UserProvider(this._dataProvider, {AuthRepository? authRepository})
+      : _authRepository = authRepository ?? AuthRepository(HttpService()) {
     _currentUser = _dataProvider.user;
   }
 
@@ -42,28 +43,11 @@ class UserProvider extends ChangeNotifier {
         'password': data.password,
       };
 
-      final response = await service.addItem(
-        endpointUrl: 'users/login',
-        itemData: loginData,
-        includeAuth: false,
-        allowRefreshOn401: false,
-      );
-
-      if (!response.isOk) {
-        return HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to sign in. Please try again.',
-        );
-      }
-
-      final apiResponse = ApiResponse<User>.fromJson(
-        response.body,
-        (json) => User.fromJson(json as Map<String, dynamic>),
-      );
+      final apiResponse = await _authRepository.login(loginData);
 
       if (!apiResponse.success) {
         return HttpService.parseApiMessage(
-          response.body,
+          null,
           fallback: apiResponse.message.isNotEmpty
               ? apiResponse.message
               : 'Unable to sign in. Please try again.',
@@ -95,35 +79,22 @@ class UserProvider extends ChangeNotifier {
         'password': data.password,
       };
 
-      final response = await service.addItem(
-        endpointUrl: 'users/register',
-        itemData: signupData,
-        includeAuth: false,
-        allowRefreshOn401: false,
-      );
+      final body = await _authRepository.register(signupData);
 
-      if (!response.isOk) {
-        return HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to create your account. Please try again.',
-        );
-      }
-
-      final success =
-          response.body is Map<String, dynamic> && response.body['success'] == true;
+      final success = body is Map<String, dynamic> && body['success'] == true;
 
       if (success) {
         _pendingVerificationEmail = signupData['email'];
         SnackBarHelper.showSuccessSnackBar(
-          HttpService.parseResponseMessage(
-            response,
+          HttpService.parseApiMessage(
+            body,
             fallback: 'Verification code sent. Please check your email.',
           ),
         );
         return null;
       }
       return HttpService.parseApiMessage(
-        response.body,
+        body,
         fallback: 'Unable to create your account. Please try again.',
       );
     } catch (e) {
@@ -140,31 +111,14 @@ class UserProvider extends ChangeNotifier {
     required String code,
   }) async {
     try {
-      final response = await service.addItem(
-        endpointUrl: 'users/verify-email',
-        itemData: {
-          'email': email.trim().toLowerCase(),
-          'code': code.trim(),
-        },
-        includeAuth: false,
-        allowRefreshOn401: false,
-      );
-
-      if (!response.isOk) {
-        return HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to verify this code. Please try again.',
-        );
-      }
-
-      final apiResponse = ApiResponse<User>.fromJson(
-        response.body,
-        (json) => User.fromJson(json as Map<String, dynamic>),
+      final apiResponse = await _authRepository.verifyEmail(
+        email: email.trim().toLowerCase(),
+        code: code.trim(),
       );
 
       if (!apiResponse.success) {
         return HttpService.parseApiMessage(
-          response.body,
+          null,
           fallback: apiResponse.message.isNotEmpty
               ? apiResponse.message
               : 'Unable to verify this code. Please try again.',
@@ -188,23 +142,13 @@ class UserProvider extends ChangeNotifier {
 
   Future<String?> resendVerificationCode(String email) async {
     try {
-      final response = await service.addItem(
-        endpointUrl: 'users/resend-verification-code',
-        itemData: {'email': email.trim().toLowerCase()},
-        includeAuth: false,
-        allowRefreshOn401: false,
+      final body = await _authRepository.resendVerificationCode(
+        email.trim().toLowerCase(),
       );
 
-      if (!response.isOk) {
-        return HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to send a new code. Please try again.',
-        );
-      }
-
       SnackBarHelper.showSuccessSnackBar(
-        HttpService.parseResponseMessage(
-          response,
+        HttpService.parseApiMessage(
+          body,
           fallback: 'Verification code sent.',
         ),
       );
@@ -227,10 +171,9 @@ class UserProvider extends ChangeNotifier {
 
   Future<bool> fetchCurrentUserProfile({bool showSnack = false}) async {
     try {
-      final response = await service.getItems(endpointUrl: 'users/me');
-      if (!response.isOk || response.body == null) return false;
+      final body = await _authRepository.fetchCurrentUserProfile();
 
-      final user = _extractUser(response.body);
+      final user = _extractUser(body);
       if (user == null) return false;
 
       _currentUser = user;
@@ -286,12 +229,7 @@ class UserProvider extends ChangeNotifier {
     final accessToken = _readToken(TOKEN);
     if ((accessToken ?? '').isNotEmpty) {
       try {
-        await service.addItem(
-          endpointUrl: 'users/logout',
-          itemData: const <String, dynamic>{},
-          includeAuth: true,
-          allowRefreshOn401: false,
-        );
+        await _authRepository.logout();
       } catch (_) {}
     }
 

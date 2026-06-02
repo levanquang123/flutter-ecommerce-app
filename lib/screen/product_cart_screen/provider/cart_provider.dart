@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-import '../../../models/api_response.dart';
 import '../../../models/cart.dart';
 import '../../../models/coupon.dart';
 import '../../../models/product.dart';
@@ -11,10 +10,13 @@ import '../../../services/http_services.dart';
 import '../../../utility/extensions.dart';
 import '../../../utility/snack_bar_helper.dart';
 import '../../login_screen/provider/user_provider.dart';
+import '../data/cart_repository.dart';
+import '../data/checkout_repository.dart';
 
 class CartProvider extends ChangeNotifier {
-  final HttpService service = HttpService();
   final UserProvider _userProvider;
+  final CartRepository _cartRepository;
+  final CheckoutRepository _checkoutRepository;
 
   Cart? _cart;
   bool isLoading = false;
@@ -35,7 +37,13 @@ class CartProvider extends ChangeNotifier {
   String selectedPaymentOption = 'cod';
   bool isSubmittingOrder = false;
 
-  CartProvider(this._userProvider);
+  CartProvider(
+    this._userProvider, {
+    CartRepository? cartRepository,
+    CheckoutRepository? checkoutRepository,
+  })  : _cartRepository = cartRepository ?? CartRepository(HttpService()),
+        _checkoutRepository =
+            checkoutRepository ?? CheckoutRepository(HttpService());
 
   List<CartItem> get myCartItems => _cart?.items ?? [];
 
@@ -77,15 +85,7 @@ class CartProvider extends ChangeNotifier {
     loadErrorMessage = null;
     notifyListeners();
     try {
-      final response = await service.getItems(endpointUrl: 'cart');
-      if (response.isOk && response.body != null) {
-        _cart = _extractCartFromResponse(response.body);
-      } else {
-        loadErrorMessage = HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to load your cart.',
-        );
-      }
+      _cart = await _cartRepository.loadCart();
     } catch (e) {
       loadErrorMessage = HttpService.humanizeError(
         e,
@@ -95,22 +95,6 @@ class CartProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
-  }
-
-  Cart _extractCartFromResponse(dynamic body) {
-    if (body is! Map<String, dynamic>) return const Cart(items: []);
-    dynamic payload = body;
-    if (payload['data'] is Map<String, dynamic>) {
-      payload = payload['data'];
-    }
-    if (payload is Map<String, dynamic> &&
-        payload['cart'] is Map<String, dynamic>) {
-      payload = payload['cart'];
-    }
-    if (payload is Map<String, dynamic>) {
-      return Cart.fromJson(payload);
-    }
-    return const Cart(items: []);
   }
 
   Future<bool> addItemFromProduct({
@@ -160,26 +144,11 @@ class CartProvider extends ChangeNotifier {
     }
 
     try {
-      final response = await service.addItem(
-        endpointUrl: 'cart/items',
-        itemData: {
-          'productId': product.sId,
-          'quantity': quantity,
-          if (_isValidObjectId(variantId)) 'variantId': variantId,
-        },
+      _cart = await _cartRepository.addItem(
+        product: product,
+        variantId: variantId,
+        quantity: quantity,
       );
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to add this item to your cart.',
-          ),
-        );
-        return false;
-      }
-
-      _cart = _extractCartFromResponse(response.body);
       notifyListeners();
       SnackBarHelper.showSuccessSnackBar('Item added to cart');
       return true;
@@ -239,27 +208,11 @@ class CartProvider extends ChangeNotifier {
     }
 
     try {
-      final response = await service.putItem(
-        endpointUrl: 'cart/items',
-        itemData: {
-          'productId': cartItem.productId,
-          if (_isValidObjectId(cartItem.variantId))
-            'variantId': cartItem.variantId,
-          'quantity': newQuantity,
-        },
+      _cart = await _cartRepository.updateItem(
+        productId: cartItem.productId,
+        variantId: cartItem.variantId,
+        quantity: newQuantity,
       );
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to update cart quantity.',
-          ),
-        );
-        return;
-      }
-
-      _cart = _extractCartFromResponse(response.body);
       notifyListeners();
     } catch (e) {
       SnackBarHelper.showErrorSnackBar(
@@ -281,25 +234,10 @@ class CartProvider extends ChangeNotifier {
     }
 
     try {
-      final response = await service.deleteWithBody(
-        endpointUrl: 'cart/items',
-        body: {
-          'productId': productId,
-          if (_isValidObjectId(variantId)) 'variantId': variantId,
-        },
+      _cart = await _cartRepository.removeItem(
+        productId: productId,
+        variantId: variantId,
       );
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to remove this item from your cart.',
-          ),
-        );
-        return false;
-      }
-
-      _cart = _extractCartFromResponse(response.body);
       notifyListeners();
       SnackBarHelper.showSuccessSnackBar('Item removed from cart');
       return true;
@@ -316,20 +254,7 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> clearCartItems() async {
     try {
-      final response = await service.deleteItem(
-        endpointUrl: 'cart',
-        itemId: 'clear',
-      );
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to clear your cart.',
-          ),
-        );
-        return;
-      }
+      await _cartRepository.clearCart();
 
       _cart = const Cart(items: []);
       notifyListeners();
@@ -379,35 +304,19 @@ class CartProvider extends ChangeNotifier {
         'items': items,
       };
 
-      final response = await service.addItem(
-        endpointUrl: 'couponCodes/check-coupon',
-        itemData: couponData,
-      );
+      final result = await _checkoutRepository.checkCoupon(couponData);
+      final apiResponse = result.apiResponse;
 
-      if (response.isOk) {
-        final apiResponse = ApiResponse<Coupon>.fromJson(
-          response.body,
-          (json) => Coupon.fromJson(json as Map<String, dynamic>),
-        );
-
-        if (apiResponse.success == true && apiResponse.data != null) {
-          couponApplied = apiResponse.data;
-          couponCodeDiscount = _extractServerDiscount(response.body) ??
-              getCouponDiscountAmount(apiResponse.data!);
-          notifyListeners();
-          SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-          return;
-        }
-        SnackBarHelper.showErrorSnackBar(apiResponse.message);
+      if (apiResponse.success == true && apiResponse.data != null) {
+        couponApplied = apiResponse.data;
+        couponCodeDiscount =
+            result.serverDiscount ?? getCouponDiscountAmount(apiResponse.data!);
+        notifyListeners();
+        SnackBarHelper.showSuccessSnackBar(apiResponse.message);
         return;
       }
-
-      final message = response.body is Map<String, dynamic>
-          ? response.body['message']?.toString()
-          : response.statusText;
-      SnackBarHelper.showErrorSnackBar(
-        message ?? 'Unable to validate this coupon code.',
-      );
+      SnackBarHelper.showErrorSnackBar(apiResponse.message);
+      return;
     } catch (e) {
       log('Error checking coupon: $e');
       SnackBarHelper.showErrorSnackBar(
@@ -417,23 +326,6 @@ class CartProvider extends ChangeNotifier {
         ),
       );
     }
-  }
-
-  double? _extractServerDiscount(dynamic body) {
-    if (body is! Map<String, dynamic>) return null;
-    final data = body['data'];
-    if (data is! Map<String, dynamic>) return null;
-
-    final orderTotal = data['orderTotal'];
-    if (orderTotal is Map<String, dynamic> && orderTotal['discount'] is num) {
-      return (orderTotal['discount'] as num).toDouble();
-    }
-
-    if (data['calculatedDiscount'] is num) {
-      return (data['calculatedDiscount'] as num).toDouble();
-    }
-
-    return null;
   }
 
   double getCouponDiscountAmount(Coupon coupon) {
@@ -520,20 +412,7 @@ class CartProvider extends ChangeNotifier {
       log('Order payload ids: items=${orderItems.map((e) => e['productID']).toList()}, '
           'couponCode=${order['couponCode']}');
 
-      final response =
-          await service.addItem(endpointUrl: 'orders', itemData: order);
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to place your order. Please try again.',
-          ),
-        );
-        return false;
-      }
-
-      final apiResponse = ApiResponse.fromJson(response.body, (json) => json);
+      final apiResponse = await _checkoutRepository.createOrder(order);
       if (apiResponse.success == true) {
         SnackBarHelper.showSuccessSnackBar(apiResponse.message);
         if (!context.mounted) return true;
@@ -548,7 +427,7 @@ class CartProvider extends ChangeNotifier {
       } else {
         SnackBarHelper.showErrorSnackBar(
           HttpService.parseApiMessage(
-            response.body,
+            null,
             fallback: apiResponse.message.isNotEmpty
                 ? apiResponse.message
                 : 'Unable to place your order. Please try again.',
@@ -636,20 +515,9 @@ class CartProvider extends ChangeNotifier {
       final paymentData = _buildCheckoutPayload();
       if (paymentData == null) return false;
 
-      final response = await service.addItem(
-          endpointUrl: 'payment/stripe', itemData: paymentData);
-
-      if (!response.isOk) {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to initialize payment. Please try again.',
-          ),
-        );
-        return false;
-      }
-
-      final data = response.body['data'];
+      final body =
+          await _checkoutRepository.initializeStripePayment(paymentData);
+      final data = body['data'];
       final paymentIntent = data['paymentIntent'];
       final ephemeralKey = data['ephemeralKey'];
       final customer = data['customer'];

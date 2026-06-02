@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:get/get.dart';
 import '../../../models/category.dart';
-import '../../models/api_response.dart';
 import '../../models/brand.dart';
 import '../../models/order.dart';
 import '../../models/poster.dart';
@@ -13,9 +12,17 @@ import '../../models/sub_category.dart';
 import '../../models/user.dart';
 import '../../services/http_services.dart';
 import '../../utility/snack_bar_helper.dart';
+import 'catalog_repository.dart';
+import 'favorite_repository.dart';
+import 'order_repository.dart';
+import '../../screen/review_screen/data/review_repository.dart';
 
 class DataProvider extends ChangeNotifier {
-  final HttpService service = HttpService();
+  final HttpService service;
+  final CatalogRepository _catalogRepository;
+  final OrderRepository _orderRepository;
+  final FavoriteRepository _favoriteRepository;
+  final ReviewRepository _reviewRepository;
 
   List<Category> _allCategories = [];
   List<Category> _filteredCategories = [];
@@ -56,7 +63,21 @@ class DataProvider extends ChangeNotifier {
 
   static const Duration _homeCatalogRefreshInterval = Duration(seconds: 45);
 
-  DataProvider();
+  DataProvider({
+    HttpService? service,
+    CatalogRepository? catalogRepository,
+    OrderRepository? orderRepository,
+    FavoriteRepository? favoriteRepository,
+    ReviewRepository? reviewRepository,
+  })  : service = service ?? HttpService(),
+        _catalogRepository =
+            catalogRepository ?? CatalogRepository(service ?? HttpService()),
+        _orderRepository =
+            orderRepository ?? OrderRepository(service ?? HttpService()),
+        _favoriteRepository =
+            favoriteRepository ?? FavoriteRepository(service ?? HttpService()),
+        _reviewRepository =
+            reviewRepository ?? ReviewRepository(service ?? HttpService());
 
   Future<void> initializeData() async {
     isInitialLoading = true;
@@ -117,21 +138,13 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<Category>> getAllCategory({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: "categories");
-      if (response.isOk) {
-        ApiResponse<List<Category>> apiResponse =
-            ApiResponse<List<Category>>.fromJson(
-          response.body,
-          (json) =>
-              (json as List).map((item) => Category.fromJson(item)).toList(),
-        );
-        _allCategories = apiResponse.data ?? [];
-        _filteredCategories = List.from(_allCategories);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-      } else {
-        _rememberLoadFailure(response, 'Unable to load categories.');
-      }
+      final apiResponse = await _catalogRepository.getCategories();
+      _allCategories = apiResponse.data ?? [];
+      _filteredCategories = List.from(_allCategories);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+    } on ResponseException catch (e) {
+      _rememberLoadFailure(e.response, 'Unable to load categories.');
     } catch (e) {
       _lastLoadErrorMessage = HttpService.humanizeError(
         e,
@@ -157,21 +170,13 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<SubCategory>> getAllSubCategory({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: "SubCategories");
-      if (response.isOk) {
-        ApiResponse<List<SubCategory>> apiResponse =
-            ApiResponse<List<SubCategory>>.fromJson(
-          response.body,
-          (json) =>
-              (json as List).map((item) => SubCategory.fromJson(item)).toList(),
-        );
-        _allSubCategories = apiResponse.data ?? [];
-        _filteredSubCategories = List.from(_allSubCategories);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-      } else {
-        _rememberLoadFailure(response, 'Unable to load sub categories.');
-      }
+      final apiResponse = await _catalogRepository.getSubCategories();
+      _allSubCategories = apiResponse.data ?? [];
+      _filteredSubCategories = List.from(_allSubCategories);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+    } on ResponseException catch (e) {
+      _rememberLoadFailure(e.response, 'Unable to load sub categories.');
     } catch (e) {
       _lastLoadErrorMessage = HttpService.humanizeError(
         e,
@@ -197,20 +202,13 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<Brand>> getAllBrands({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: "brands");
-      if (response.isOk) {
-        ApiResponse<List<Brand>> apiResponse =
-            ApiResponse<List<Brand>>.fromJson(
-          response.body,
-          (json) => (json as List).map((item) => Brand.fromJson(item)).toList(),
-        );
-        _allBrands = apiResponse.data ?? [];
-        _filteredBrands = List.from(_allBrands);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-      } else {
-        _rememberLoadFailure(response, 'Unable to load brands.');
-      }
+      final apiResponse = await _catalogRepository.getBrands();
+      _allBrands = apiResponse.data ?? [];
+      _filteredBrands = List.from(_allBrands);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+    } on ResponseException catch (e) {
+      _rememberLoadFailure(e.response, 'Unable to load brands.');
     } catch (e) {
       _lastLoadErrorMessage = HttpService.humanizeError(
         e,
@@ -236,20 +234,13 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<Product>> getAllProducts({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: 'products');
-      if (response.isOk) {
-        ApiResponse<List<Product>> apiResponse =
-            ApiResponse<List<Product>>.fromJson(
-          response.body,
-          (json) => (json as List).map((e) => Product.fromJson(e)).toList(),
-        );
-        _allProducts = apiResponse.data ?? [];
-        _filteredProducts = List.from(_allProducts);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-      } else {
-        _rememberLoadFailure(response, 'Unable to load products.');
-      }
+      final apiResponse = await _catalogRepository.getProducts();
+      _allProducts = apiResponse.data ?? [];
+      _filteredProducts = List.from(_allProducts);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+    } on ResponseException catch (e) {
+      _rememberLoadFailure(e.response, 'Unable to load products.');
     } catch (e) {
       _lastLoadErrorMessage = HttpService.humanizeError(
         e,
@@ -279,21 +270,13 @@ class DataProvider extends ChangeNotifier {
 
   Future<List<Poster>> getAllPosters({bool showSnack = false}) async {
     try {
-      Response response = await service.getItems(endpointUrl: "posters");
-      if (response.isOk) {
-        ApiResponse<List<Poster>> apiResponse =
-            ApiResponse<List<Poster>>.fromJson(
-          response.body,
-          (json) =>
-              (json as List).map((item) => Poster.fromJson(item)).toList(),
-        );
-        _allPosters = apiResponse.data ?? [];
-        _filteredPosters = List.from(_allPosters);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-      } else {
-        _rememberLoadFailure(response, 'Unable to load posters.');
-      }
+      final apiResponse = await _catalogRepository.getPosters();
+      _allPosters = apiResponse.data ?? [];
+      _filteredPosters = List.from(_allPosters);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+    } on ResponseException catch (e) {
+      _rememberLoadFailure(e.response, 'Unable to load posters.');
     } catch (e) {
       _lastLoadErrorMessage = HttpService.humanizeError(
         e,
@@ -313,25 +296,18 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      Response response =
-          await service.getItems(endpointUrl: 'orders/orderByUserId/$userId');
-      if (response.isOk) {
-        ApiResponse<List<Order>> apiResponse =
-            ApiResponse<List<Order>>.fromJson(
-          response.body,
-          (json) => (json as List).map((item) => Order.fromJson(item)).toList(),
-        );
-        _allOrders =
-            (apiResponse.data ?? []).where(_shouldShowInOrderHistory).toList();
-        _filteredOrders = List.from(_allOrders);
-        notifyListeners();
-        if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
-        return true;
-      }
+      final apiResponse = await _orderRepository.getOrdersByUser(userId!);
+      _allOrders =
+          (apiResponse.data ?? []).where(_shouldShowInOrderHistory).toList();
+      _filteredOrders = List.from(_allOrders);
+      notifyListeners();
+      if (showSnack) SnackBarHelper.showSuccessSnackBar(apiResponse.message);
+      return true;
+    } on ResponseException catch (e) {
       if (showSnack) {
         SnackBarHelper.showErrorSnackBar(
           HttpService.parseResponseMessage(
-            response,
+            e.response,
             fallback: 'Unable to load your orders.',
           ),
         );
@@ -387,22 +363,11 @@ class DataProvider extends ChangeNotifier {
     favoriteLoadErrorMessage = null;
     notifyListeners();
     try {
-      Response response =
-          await service.getItems(endpointUrl: "users/favorites");
-      if (response.isOk && response.body != null) {
-        final List<dynamic> favList = response.body['data'] ?? [];
-        _favoriteProducts =
-            favList.map((item) => Product.fromJson(item)).toList();
-        if (user != null) {
-          user!.favorites = List.from(_favoriteProducts);
-        }
-        notifyListeners();
-      } else {
-        favoriteLoadErrorMessage = HttpService.parseResponseMessage(
-          response,
-          fallback: 'Unable to load your favorites.',
-        );
+      _favoriteProducts = await _favoriteRepository.getFavoriteProducts();
+      if (user != null) {
+        user!.favorites = List.from(_favoriteProducts);
       }
+      notifyListeners();
     } catch (e) {
       log("Favorite Parsing Error: $e");
       favoriteLoadErrorMessage = HttpService.humanizeError(
@@ -421,30 +386,11 @@ class DataProvider extends ChangeNotifier {
     int? rating,
     String sort = 'newest',
   }) async {
-    final query = <String>[];
-    if (rating != null && rating >= 1 && rating <= 5) {
-      query.add('rating=$rating');
-    }
-    final normalizedSort = sort.toLowerCase() == 'oldest' ? 'oldest' : 'newest';
-    query.add('sort=$normalizedSort');
-    final endpoint = query.isEmpty
-        ? 'reviews/product/$productId'
-        : 'reviews/product/$productId?${query.join('&')}';
-
-    Response response = await service.getItems(endpointUrl: endpoint);
-    if (!response.isOk) {
-      throw Exception(
-          _extractMessage(response.body, fallback: 'Cannot load reviews'));
-    }
-
-    if (response.body is Map<String, dynamic>) {
-      return ReviewQueryResult.fromJson(response.body as Map<String, dynamic>);
-    }
-
-    final List<dynamic> list = _extractList(response.body);
-    final reviews =
-        list.whereType<Map<String, dynamic>>().map(Review.fromJson).toList();
-    return ReviewQueryResult(reviews: reviews);
+    return _reviewRepository.getProductReviews(
+      productId,
+      rating: rating,
+      sort: sort,
+    );
   }
 
   Future<Review> createProductReview({
@@ -454,25 +400,13 @@ class DataProvider extends ChangeNotifier {
     required int rating,
     required String comment,
   }) async {
-    Response response = await service.addItem(
-      endpointUrl: 'reviews/product/$productId',
-      itemData: {
-        'orderID': orderID,
-        'orderItemID': orderItemID,
-        'rating': rating,
-        'comment': comment,
-      },
+    return _reviewRepository.createProductReview(
+      productId: productId,
+      orderID: orderID,
+      orderItemID: orderItemID,
+      rating: rating,
+      comment: comment,
     );
-    if (!response.isOk) {
-      throw Exception(
-          _extractMessage(response.body, fallback: 'Cannot create review'));
-    }
-
-    final raw = _extractDataObject(response.body);
-    if (raw == null) {
-      throw Exception('Review payload is invalid');
-    }
-    return Review.fromJson(raw);
   }
 
   Future<Review> updateReview({
@@ -480,57 +414,34 @@ class DataProvider extends ChangeNotifier {
     required int rating,
     required String comment,
   }) async {
-    Response response = await service.putItem(
-      endpointUrl: 'reviews/$reviewId',
-      itemData: {
-        'rating': rating,
-        'comment': comment,
-      },
+    return _reviewRepository.updateReview(
+      reviewId: reviewId,
+      rating: rating,
+      comment: comment,
     );
-    if (!response.isOk) {
-      throw Exception(
-          _extractMessage(response.body, fallback: 'Cannot update review'));
-    }
-
-    final raw = _extractDataObject(response.body);
-    if (raw == null) {
-      throw Exception('Review payload is invalid');
-    }
-    return Review.fromJson(raw);
   }
 
   Future<void> deleteReview(String reviewId) async {
-    Response response =
-        await service.deleteItem(endpointUrl: 'reviews', itemId: reviewId);
-    if (!response.isOk) {
-      throw Exception(
-          _extractMessage(response.body, fallback: 'Cannot delete review'));
-    }
+    await _reviewRepository.deleteReview(reviewId);
   }
 
   Future<void> toggleFavoriteApi(String productId) async {
     try {
       bool isCurrentlyFavorite =
           _favoriteProducts.any((p) => p.sId == productId);
-      Response response = await service.addItem(
-        endpointUrl: 'users/favorite',
-        itemData: {'productId': productId},
+      await _favoriteRepository.toggleFavorite(productId);
+      await getFavoriteProducts();
+      SnackBarHelper.showSuccessSnackBar(
+        isCurrentlyFavorite ? "Removed from favorites" : "Added to favorites",
       );
-
-      if (response.isOk) {
-        await getFavoriteProducts();
-        SnackBarHelper.showSuccessSnackBar(
-          isCurrentlyFavorite ? "Removed from favorites" : "Added to favorites",
-        );
-        notifyListeners();
-      } else {
-        SnackBarHelper.showErrorSnackBar(
-          HttpService.parseResponseMessage(
-            response,
-            fallback: 'Unable to update your favorite list.',
-          ),
-        );
-      }
+      notifyListeners();
+    } on ResponseException catch (e) {
+      SnackBarHelper.showErrorSnackBar(
+        HttpService.parseResponseMessage(
+          e.response,
+          fallback: 'Unable to update your favorite list.',
+        ),
+      );
     } catch (e) {
       SnackBarHelper.showErrorSnackBar(
         HttpService.humanizeError(
@@ -539,34 +450,5 @@ class DataProvider extends ChangeNotifier {
         ),
       );
     }
-  }
-
-  static List<dynamic> _extractList(dynamic body) {
-    if (body is List) return body;
-    if (body is Map<String, dynamic>) {
-      final data = body['data'];
-      if (data is List) return data;
-      if (data is Map<String, dynamic> && data['reviews'] is List) {
-        return data['reviews'] as List;
-      }
-      if (body['reviews'] is List) return body['reviews'] as List;
-    }
-    return const <dynamic>[];
-  }
-
-  static Map<String, dynamic>? _extractDataObject(dynamic body) {
-    if (body is Map<String, dynamic>) {
-      if (body['data'] is Map<String, dynamic>) {
-        return body['data'] as Map<String, dynamic>;
-      }
-      if (body['review'] is Map<String, dynamic>) {
-        return body['review'] as Map<String, dynamic>;
-      }
-    }
-    return body is Map<String, dynamic> ? body : null;
-  }
-
-  static String _extractMessage(dynamic body, {required String fallback}) {
-    return HttpService.parseApiMessage(body, fallback: fallback);
   }
 }

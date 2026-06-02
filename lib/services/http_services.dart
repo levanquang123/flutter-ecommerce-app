@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 
 import '../models/user.dart';
 import '../utility/constants.dart';
-import 'http/api_exception.dart';
 import 'http/auth_session_manager.dart';
 import 'http/auth_storage.dart';
 import 'http/http_client_utils.dart';
@@ -40,15 +39,15 @@ class HttpService extends GetConnect {
       AuthSessionManager.setSentryUser(user);
 
   static Future<bool> bootstrapSession() {
-    final _tempClient = HttpService();
+    final tempClient = HttpService();
     return AuthSessionManager.bootstrapSession(
-      httpGet: (url, {headers}) => _tempClient.get(url, headers: headers),
+      httpGet: (url, {headers}) => tempClient.get(url, headers: headers),
       refreshWithLock: ({required bool navigateOnFail}) =>
           AuthSessionManager.refreshTokenWithLock(
-            navigateOnFail: navigateOnFail,
-            buildTracingHeaders: HttpClientUtils.buildTracingHeaders,
-            buildUri: HttpClientUtils.buildUri,
-          ),
+        navigateOnFail: navigateOnFail,
+        buildTracingHeaders: HttpClientUtils.buildTracingHeaders,
+        buildUri: HttpClientUtils.buildUri,
+      ),
     );
   }
 
@@ -160,7 +159,9 @@ class HttpService extends GetConnect {
 
   bool _shouldCaptureApiError(String endpointUrl, int statusCode) {
     if (_isCatalogEndpoint(endpointUrl) &&
-        _isTransientNetworkStatus(statusCode)) return false;
+        _isTransientNetworkStatus(statusCode)) {
+      return false;
+    }
     if (statusCode >= 500) return true;
     if (_isExpectedAuthClientError(endpointUrl, statusCode)) return false;
     if (statusCode == 401 && !_isAuthFreeEndpoint(endpointUrl)) return true;
@@ -222,7 +223,8 @@ class HttpService extends GetConnect {
       }
 
       final statusCode = response.statusCode ?? 0;
-      if (statusCode >= 400 && _shouldCaptureApiError(endpointUrl, statusCode)) {
+      if (statusCode >= 400 &&
+          _shouldCaptureApiError(endpointUrl, statusCode)) {
         await HttpErrorHandler.captureHttpException(
           method: method,
           endpointUrl: endpointUrl,

@@ -7,14 +7,21 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'core/data/catalog_repository.dart';
 import 'core/data/data_provider.dart';
+import 'core/data/favorite_repository.dart';
+import 'core/data/order_repository.dart';
 import 'models/user.dart';
+import 'screen/review_screen/data/review_repository.dart';
 import 'services/http_services.dart';
 import 'services/push_notification_service.dart';
 import 'screen/home_screen.dart';
+import 'screen/login_screen/data/auth_repository.dart';
 import 'screen/login_screen/login_screen.dart';
 import 'screen/login_screen/provider/user_provider.dart';
 import 'screen/product_by_category_screen/provider/product_by_category_provider.dart';
+import 'screen/product_cart_screen/data/cart_repository.dart';
+import 'screen/product_cart_screen/data/checkout_repository.dart';
 import 'screen/product_cart_screen/provider/cart_provider.dart';
 import 'screen/product_details_screen/provider/product_detail_provider.dart';
 import 'screen/product_favorite_screen/provider/favorite_provider.dart';
@@ -103,12 +110,31 @@ Future<void> main() async {
             MultiProvider(
               providers: [
                 ChangeNotifierProvider(
-                  create: (_) => DataProvider()..user = loginUser,
+                  create: (_) {
+                    final httpService = HttpService();
+                    return DataProvider(
+                      service: httpService,
+                      catalogRepository: CatalogRepository(httpService),
+                      orderRepository: OrderRepository(httpService),
+                      favoriteRepository: FavoriteRepository(httpService),
+                      reviewRepository: ReviewRepository(httpService),
+                    )..user = loginUser;
+                  },
                 ),
                 ChangeNotifierProxyProvider<DataProvider, UserProvider>(
-                  create: (context) =>
-                      UserProvider(context.read<DataProvider>()),
-                  update: (_, data, prev) => prev ?? UserProvider(data),
+                  create: (context) {
+                    final httpService = HttpService();
+                    return UserProvider(
+                      context.read<DataProvider>(),
+                      authRepository: AuthRepository(httpService),
+                    );
+                  },
+                  update: (_, data, prev) =>
+                      prev ??
+                      UserProvider(
+                        data,
+                        authRepository: AuthRepository(HttpService()),
+                      ),
                 ),
                 ChangeNotifierProxyProvider<UserProvider, ProfileProvider>(
                   create: (context) =>
@@ -127,10 +153,21 @@ Future<void> main() async {
                   create: (context) => ProductDetailProvider(),
                 ),
                 ChangeNotifierProxyProvider<UserProvider, CartProvider>(
-                  create: (context) =>
-                      CartProvider(context.read<UserProvider>()),
+                  create: (context) {
+                    final httpService = HttpService();
+                    return CartProvider(
+                      context.read<UserProvider>(),
+                      cartRepository: CartRepository(httpService),
+                      checkoutRepository: CheckoutRepository(httpService),
+                    );
+                  },
                   update: (_, userProvider, prev) =>
-                      prev ?? CartProvider(userProvider),
+                      prev ??
+                      CartProvider(
+                        userProvider,
+                        cartRepository: CartRepository(HttpService()),
+                        checkoutRepository: CheckoutRepository(HttpService()),
+                      ),
                 ),
                 ChangeNotifierProxyProvider<DataProvider, FavoriteProvider>(
                   create: (context) =>
